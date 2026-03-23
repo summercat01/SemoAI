@@ -16,21 +16,21 @@ function getDomain(url: string) {
   try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
 }
 
-function ServiceLogo({ url, name }: { url: string; name: string }) {
+function ServiceLogo({ url, name, size = 48 }: { url: string; name: string; size?: number }) {
   const domain = getDomain(url);
   const [src, setSrc] = useState(0);
   const sources = domain ? [
     `https://logo.clearbit.com/${domain}`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ] : [];
 
   if (!domain || src >= sources.length) {
     return (
       <div style={{
-        width: 48, height: 48, borderRadius: 12,
+        width: size, height: size, borderRadius: size * 0.25,
         background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20, fontWeight: 800, color: '#fff', flexShrink: 0,
+        fontSize: size * 0.42, fontWeight: 800, color: '#fff',
       }}>{name[0]}</div>
     );
   }
@@ -40,7 +40,7 @@ function ServiceLogo({ url, name }: { url: string; name: string }) {
       src={sources[src]}
       alt={name}
       onError={() => setSrc(s => s + 1)}
-      style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'contain', flexShrink: 0, background: '#fff', padding: 4 }}
+      style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: size * 0.08 }}
     />
   );
 }
@@ -236,35 +236,35 @@ export default function Home() {
                     transform: isActive ? 'scale(1)' : 'scale(0.94)',
                     transformOrigin: 'center center',
                   }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <ServiceLogo url={s.website_url} name={s.name} />
-                      <span style={{
-                        fontWeight: 800,
-                        fontSize: isActive ? 24 : 18,
-                        letterSpacing: '-0.5px', lineHeight: 1.2,
-                        transition: 'font-size 0.4s',
-                      }}>{s.name}</span>
-                    </div>
+                  {/* Top: name + badge */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <span style={{
-                      fontSize: 13, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+                      fontWeight: 800, fontSize: isActive ? 22 : 16,
+                      letterSpacing: '-0.4px', transition: 'font-size 0.4s',
+                    }}>{s.name}</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, padding: '2px 9px', borderRadius: 20,
                       border: `1px solid ${badge.color}55`,
                       color: badge.color, background: `${badge.color}18`,
-                      whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
+                      whiteSpace: 'nowrap', flexShrink: 0,
                     }}>{badge.label}</span>
                   </div>
+                  {/* Middle: big logo */}
+                  <div style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.06)', borderRadius: 16,
+                    overflow: 'hidden',
+                  }}>
+                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 80 : 56} />
+                  </div>
+                  {/* Bottom: tagline */}
                   <p style={{
-                    fontSize: isActive ? 16 : 14,
-                    color: 'rgba(240,240,255,0.65)', lineHeight: 1.7,
-                    flex: 1, overflow: 'hidden',
-                    display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical',
-                    transition: 'font-size 0.4s',
+                    fontSize: isActive ? 13 : 11,
+                    color: 'rgba(240,240,255,0.55)', lineHeight: 1.5,
+                    textAlign: 'center',
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
                   }}>{s.tagline}</p>
-                  <span style={{
-                    fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
-                    padding: '3px 8px', background: 'rgba(255,255,255,0.05)',
-                    borderRadius: 6, alignSelf: 'flex-start',
-                  }}>{s.category_name}</span>
                 </div>
               );
             }) : Array.from({ length: 5 }).map((_, i) => (
