@@ -252,8 +252,6 @@ export default function Home() {
                   {/* Middle: big logo */}
                   <div style={{
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(255,255,255,0.06)', borderRadius: 16,
-                    overflow: 'hidden',
                   }}>
                     <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 220 : 130} />
                   </div>
