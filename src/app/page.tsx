@@ -198,7 +198,7 @@ export default function Home() {
               fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
               background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>300+</span>
+            }}>2000+</span>
             <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)', color: 'var(--text-muted)', fontWeight: 500 }}>AI 서비스</span>
           </div>
         </div>
