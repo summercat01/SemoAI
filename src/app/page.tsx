@@ -236,18 +236,12 @@ export default function Home() {
                     transform: isActive ? 'scale(1)' : 'scale(0.94)',
                     transformOrigin: 'center center',
                   }}>
-                  {/* Top: name + badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  {/* Top: name centered */}
+                  <div style={{ textAlign: 'center' }}>
                     <span style={{
                       fontWeight: 800, fontSize: isActive ? 22 : 16,
                       letterSpacing: '-0.4px', transition: 'font-size 0.4s',
                     }}>{s.name}</span>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, padding: '2px 9px', borderRadius: 20,
-                      border: `1px solid ${badge.color}55`,
-                      color: badge.color, background: `${badge.color}18`,
-                      whiteSpace: 'nowrap', flexShrink: 0,
-                    }}>{badge.label}</span>
                   </div>
                   {/* Middle: big logo */}
                   <div style={{
@@ -255,14 +249,21 @@ export default function Home() {
                   }}>
                     <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 220 : 130} />
                   </div>
-                  {/* Bottom: tagline */}
-                  <p style={{
-                    fontSize: isActive ? 13 : 11,
-                    color: 'rgba(240,240,255,0.55)', lineHeight: 1.5,
-                    textAlign: 'center',
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}>{s.tagline}</p>
+                  {/* Bottom: tagline left + badge right */}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+                    <p style={{
+                      fontSize: isActive ? 13 : 11,
+                      color: 'rgba(240,240,255,0.55)', lineHeight: 1.5,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden', flex: 1, margin: 0,
+                    }}>{s.tagline}</p>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, padding: '2px 9px', borderRadius: 20,
+                      border: `1px solid ${badge.color}55`,
+                      color: badge.color, background: `${badge.color}18`,
+                      whiteSpace: 'nowrap', flexShrink: 0,
+                    }}>{badge.label}</span>
+                  </div>
                 </div>
               );
             }) : Array.from({ length: 5 }).map((_, i) => (
