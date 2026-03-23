@@ -26,20 +26,8 @@ const EXAMPLES = [
   'AI로 노래를 만들어 보고 싶어요',
 ];
 
-// pos: -1 (left), 0 (center), 1 (right), else hidden
-function cardTransform(pos: number): React.CSSProperties {
-  if (Math.abs(pos) > 1) return { opacity: 0, pointerEvents: 'none', transform: `translateX(${pos > 0 ? 180 : -180}%) translateZ(-200px) scale(0.4)` };
-  const tx = pos * 62; // % of card width
-  const tz = pos === 0 ? 0 : -120;
-  const ry = pos * -40;
-  const scale = pos === 0 ? 1 : 0.75;
-  const opacity = pos === 0 ? 1 : 0.5;
-  return {
-    transform: `translateX(${tx}%) translateZ(${tz}px) rotateY(${ry}deg) scale(${scale})`,
-    opacity,
-    zIndex: pos === 0 ? 10 : 5,
-  };
-}
+const CARD_WIDTH = 480; // px, center card
+const SIDE_GAP = 24;   // gap between cards
 
 export default function Home() {
   const router = useRouter();
@@ -47,7 +35,6 @@ export default function Home() {
   const [active, setActive] = useState(0);
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     fetch('/api/services/featured')
@@ -56,12 +43,12 @@ export default function Home() {
   }, []);
 
   const advance = useCallback(() => {
-    if (services.length === 0 || paused) return;
+    if (services.length === 0) return;
     setActive(a => (a + 1) % services.length);
-  }, [services.length, paused]);
+  }, [services.length]);
 
   useEffect(() => {
-    const t = setInterval(advance, 3200);
+    const t = setInterval(advance, 3500);
     return () => clearInterval(t);
   }, [advance]);
 
@@ -69,12 +56,6 @@ export default function Home() {
     const t = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 3400);
     return () => clearInterval(t);
   }, []);
-
-  const goTo = (idx: number) => {
-    setActive(idx);
-    setPaused(true);
-    setTimeout(() => setPaused(false), 5000);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +65,9 @@ export default function Home() {
   };
 
   const len = services.length;
+  // translateX to center active card
+  // Each card: CARD_WIDTH + SIDE_GAP
+  const trackOffset = active * (CARD_WIDTH + SIDE_GAP);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -91,16 +75,14 @@ export default function Home() {
       {/* Background glow */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{
-          position: 'absolute', width: 800, height: 800,
-          borderRadius: '50%', filter: 'blur(140px)',
-          background: 'rgba(124,106,247,0.13)',
+          position: 'absolute', width: 800, height: 800, borderRadius: '50%',
+          filter: 'blur(140px)', background: 'rgba(124,106,247,0.12)',
           top: '-20%', left: '50%', transform: 'translateX(-50%)',
         }} />
         <div style={{
-          position: 'absolute', width: 400, height: 400,
-          borderRadius: '50%', filter: 'blur(100px)',
-          background: 'rgba(79,195,247,0.08)',
-          bottom: '5%', right: '5%',
+          position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+          filter: 'blur(110px)', background: 'rgba(79,195,247,0.07)',
+          bottom: '0%', right: '0%',
         }} />
       </div>
 
@@ -137,11 +119,11 @@ export default function Home() {
         flex: 1, position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '32px 56px 52px',
+        padding: '32px 0 52px',
       }}>
 
         {/* Hero */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ textAlign: 'center', marginBottom: 44, padding: '0 40px' }}>
           <h1 style={{
             fontSize: 'clamp(42px, 6vw, 72px)',
             fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
@@ -156,72 +138,68 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 3-card Coverflow */}
+        {/* Carousel */}
         <div style={{
-          width: '100%', maxWidth: 900,
-          height: 340, marginBottom: 48,
-          position: 'relative',
-          perspective: '1000px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '100%', overflow: 'hidden',
+          marginBottom: 44,
         }}>
-          {len > 0 && [-1, 0, 1].map(offset => {
-            const idx = ((active + offset) % len + len) % len;
-            const s = services[idx];
-            const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
-            const isCenter = offset === 0;
-            return (
-              <div
-                key={idx}
-                onClick={() => !isCenter && goTo(idx)}
-                style={{
-                  position: 'absolute',
-                  width: 'min(360px, 42vw)',
-                  aspectRatio: '1 / 1',
-                  ...cardTransform(offset),
-                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: isCenter ? 'default' : 'pointer',
-                  transformStyle: 'preserve-3d',
-                  left: '50%',
-                  marginLeft: `calc(min(-180px, -21vw))`,
-                }}
-              >
-                <div style={{
-                  width: '100%', height: '100%',
-                  background: isCenter
-                    ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
-                    : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${isCenter ? 'rgba(124,106,247,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 28,
-                  padding: isCenter ? '36px 32px' : '28px 24px',
-                  display: 'flex', flexDirection: 'column', gap: 14,
-                  boxShadow: isCenter
-                    ? '0 24px 80px rgba(124,106,247,0.25), 0 4px 24px rgba(0,0,0,0.6)'
-                    : '0 4px 20px rgba(0,0,0,0.4)',
-                  backdropFilter: 'blur(12px)',
-                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          {/* Track */}
+          <div style={{
+            display: 'flex',
+            gap: SIDE_GAP,
+            // Center the active card: offset = 50vw - cardWidth/2 - active*(cardWidth+gap)
+            transform: `translateX(calc(50vw - ${CARD_WIDTH / 2}px - ${trackOffset}px))`,
+            transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+            padding: '8px 0 24px',
+          }}>
+            {len > 0 ? services.map((s, i) => {
+              const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+              const isActive = i === active;
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => !isActive && setActive(i)}
+                  style={{
+                    flexShrink: 0,
+                    width: CARD_WIDTH,
+                    aspectRatio: '1 / 1',
+                    borderRadius: 28,
+                    padding: isActive ? '40px 36px' : '32px 28px',
+                    background: isActive
+                      ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
+                      : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${isActive ? 'rgba(124,106,247,0.5)' : 'rgba(255,255,255,0.07)'}`,
+                    boxShadow: isActive
+                      ? '0 24px 80px rgba(124,106,247,0.25), 0 4px 24px rgba(0,0,0,0.6)'
+                      : '0 4px 20px rgba(0,0,0,0.3)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex', flexDirection: 'column', gap: 16,
+                    cursor: isActive ? 'default' : 'pointer',
+                    transition: 'all 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+                    opacity: isActive ? 1 : 0.55,
+                    transform: isActive ? 'scale(1)' : 'scale(0.94)',
+                    transformOrigin: 'center center',
+                  }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                     <span style={{
                       fontWeight: 800,
-                      fontSize: isCenter ? 28 : 18,
+                      fontSize: isActive ? 28 : 20,
                       letterSpacing: '-0.5px', lineHeight: 1.2,
-                      transition: 'font-size 0.5s',
+                      transition: 'font-size 0.4s',
                     }}>{s.name}</span>
                     <span style={{
-                      fontSize: isCenter ? 13 : 11, fontWeight: 600,
-                      padding: isCenter ? '3px 10px' : '2px 8px', borderRadius: 20,
+                      fontSize: 13, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
                       border: `1px solid ${badge.color}55`,
                       color: badge.color, background: `${badge.color}18`,
                       whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
                     }}>{badge.label}</span>
                   </div>
                   <p style={{
-                    fontSize: isCenter ? 16 : 13,
-                    color: 'rgba(240,240,255,0.65)', lineHeight: 1.65,
+                    fontSize: isActive ? 16 : 14,
+                    color: 'rgba(240,240,255,0.65)', lineHeight: 1.7,
                     flex: 1, overflow: 'hidden',
-                    display: '-webkit-box', WebkitLineClamp: isCenter ? 5 : 4, WebkitBoxOrient: 'vertical',
-                    transition: 'font-size 0.5s',
+                    display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical',
+                    transition: 'font-size 0.4s',
                   }}>{s.tagline}</p>
                   <span style={{
                     fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
@@ -229,13 +207,19 @@ export default function Home() {
                     borderRadius: 6, alignSelf: 'flex-start',
                   }}>{s.category_name}</span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            }) : Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} style={{
+                flexShrink: 0, width: CARD_WIDTH, aspectRatio: '1/1',
+                borderRadius: 28, background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--border)',
+              }} />
+            ))}
+          </div>
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 760 }}>
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 760, padding: '0 40px' }}>
           <div style={{
             position: 'relative',
             background: 'rgba(255,255,255,0.04)',
