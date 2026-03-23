@@ -26,26 +26,52 @@ const EXAMPLES = [
   'AI로 노래를 만들어 보고 싶어요',
 ];
 
-const CARD_WIDTH = 480; // px, center card
-const SIDE_GAP = 24;   // gap between cards
+const CARD_WIDTH = 480;
+const SIDE_GAP = 24;
 
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
-  const [active, setActive] = useState(0);
+  // position tracks absolute index in tripled array; starts at len (middle copy)
+  const [position, setPosition] = useState(0);
+  const [animated, setAnimated] = useState(true);
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
 
   useEffect(() => {
     fetch('/api/services/featured')
       .then(r => r.json())
-      .then(d => setServices(d.services || []));
+      .then(d => {
+        setServices(d.services || []);
+        setPosition(d.services?.length ?? 0); // start in middle copy
+      });
   }, []);
 
+  const len = services.length;
+  // tripled list for seamless loop
+  const tripled = len > 0 ? [...services, ...services, ...services] : [];
+
   const advance = useCallback(() => {
-    if (services.length === 0) return;
-    setActive(a => (a + 1) % services.length);
-  }, [services.length]);
+    if (len === 0) return;
+    setAnimated(true);
+    setPosition(p => {
+      const next = p + 1;
+      return next;
+    });
+  }, [len]);
+
+  // After reaching the end of middle+third copy, silently jump back
+  useEffect(() => {
+    if (len === 0) return;
+    if (position >= len * 2) {
+      const t = setTimeout(() => {
+        setAnimated(false);
+        setPosition(len);
+        setTimeout(() => setAnimated(true), 30);
+      }, 560);
+      return () => clearTimeout(t);
+    }
+  }, [position, len]);
 
   useEffect(() => {
     const t = setInterval(advance, 3500);
@@ -64,10 +90,7 @@ export default function Home() {
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  const len = services.length;
-  // translateX to center active card
-  // Each card: CARD_WIDTH + SIDE_GAP
-  const trackOffset = active * (CARD_WIDTH + SIDE_GAP);
+  const trackOffset = position * (CARD_WIDTH + SIDE_GAP);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -147,18 +170,17 @@ export default function Home() {
           <div style={{
             display: 'flex',
             gap: SIDE_GAP,
-            // Center the active card: offset = 50vw - cardWidth/2 - active*(cardWidth+gap)
             transform: `translateX(calc(50vw - ${CARD_WIDTH / 2}px - ${trackOffset}px))`,
-            transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: animated ? 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
             padding: '8px 0 24px',
           }}>
-            {len > 0 ? services.map((s, i) => {
+            {tripled.length > 0 ? tripled.map((s, i) => {
               const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
-              const isActive = i === active;
+              const isActive = i === position;
               return (
                 <div
-                  key={s.id}
-                  onClick={() => !isActive && setActive(i)}
+                  key={`${s.id}-${i}`}
+                  onClick={() => { if (!isActive) { setAnimated(true); setPosition(i); } }}
                   style={{
                     flexShrink: 0,
                     width: CARD_WIDTH,
@@ -208,7 +230,7 @@ export default function Home() {
                   }}>{s.category_name}</span>
                 </div>
               );
-            }) : Array.from({ length: 3 }).map((_, i) => (
+            }) : Array.from({ length: 5 }).map((_, i) => (
               <div key={i} style={{
                 flexShrink: 0, width: CARD_WIDTH, aspectRatio: '1/1',
                 borderRadius: 28, background: 'rgba(255,255,255,0.04)',
