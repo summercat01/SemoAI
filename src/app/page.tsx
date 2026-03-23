@@ -145,7 +145,7 @@ export default function Home() {
 
         {/* Single Card */}
         <div style={{
-          width: '100%', maxWidth: 680,
+          width: 'min(480px, 90vw)',
           marginBottom: 48,
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
@@ -155,12 +155,12 @@ export default function Home() {
             <div style={{
               background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
               border: '1px solid rgba(124,106,247,0.4)',
-              borderRadius: 28, padding: '44px 40px',
+              borderRadius: 28, padding: '40px 36px',
               display: 'flex', flexDirection: 'column', gap: 18,
               boxShadow: '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)',
               backdropFilter: 'blur(12px)',
               cursor: 'pointer',
-              minHeight: 280,
+              aspectRatio: '1 / 1',
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.7)';
