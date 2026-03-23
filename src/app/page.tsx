@@ -193,13 +193,13 @@ export default function Home() {
           <p style={{ color: 'var(--text-muted)', fontSize: 20 }}>
             원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
           </p>
-          <div style={{ marginTop: 28, display: 'inline-flex', alignItems: 'baseline', gap: 10 }}>
+          <div style={{ marginTop: 28, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <span style={{
               fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
               background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>300+</span>
-            <span style={{ fontSize: 'clamp(16px, 2vw, 22px)', color: 'var(--text-muted)', fontWeight: 500 }}>개의 AI 서비스</span>
+            <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)', color: 'var(--text-muted)', fontWeight: 500 }}>AI 서비스</span>
           </div>
         </div>
 
