@@ -93,9 +93,8 @@ export default function Home() {
         position: 'relative', zIndex: 10,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '20px 40px',
-        borderBottom: '1px solid var(--border)',
         backdropFilter: 'blur(16px)',
-        background: 'rgba(7,7,15,0.6)',
+        background: 'transparent',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
