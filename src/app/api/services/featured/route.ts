@@ -10,8 +10,8 @@ export async function GET() {
       FROM ai_services s
       LEFT JOIN categories c ON s.category_id = c.id
       WHERE s.is_active = true
-      ORDER BY RANDOM()
-      LIMIT 20
+      ORDER BY s.is_featured DESC, RANDOM()
+      LIMIT 50
     `);
     return NextResponse.json({ services: rows });
   } catch (error) {
