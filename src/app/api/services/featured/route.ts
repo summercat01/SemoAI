@@ -9,8 +9,8 @@ export async function GET() {
       SELECT s.id, s.name, s.tagline, s.pricing_type, s.website_url, c.name as category_name
       FROM ai_services s
       LEFT JOIN categories c ON s.category_id = c.id
-      WHERE s.is_active = true
-      ORDER BY s.is_featured DESC, RANDOM()
+      WHERE s.is_active = true AND s.is_featured = true
+      ORDER BY RANDOM()
       LIMIT 50
     `);
     return NextResponse.json({ services: rows });
