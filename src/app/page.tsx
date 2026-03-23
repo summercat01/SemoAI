@@ -255,7 +255,7 @@ export default function Home() {
                     background: 'rgba(255,255,255,0.06)', borderRadius: 16,
                     overflow: 'hidden',
                   }}>
-                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 160 : 100} />
+                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 220 : 130} />
                   </div>
                   {/* Bottom: tagline */}
                   <p style={{
