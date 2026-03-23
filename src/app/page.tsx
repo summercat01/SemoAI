@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Send } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface AiService {
   id: number;
@@ -13,139 +11,259 @@ interface AiService {
   category_name: string;
 }
 
-const PRICING_COLOR: Record<string, string> = {
-  free: 'bg-green-500/20 text-green-600 border-green-500/30',
-  freemium: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-  paid: 'bg-orange-500/20 text-orange-600 border-orange-500/30',
-  'open-source': 'bg-purple-500/20 text-purple-600 border-purple-500/30',
+const PRICING_BADGE: Record<string, { label: string; color: string }> = {
+  free:         { label: '무료',     color: '#22c55e' },
+  freemium:     { label: '무료+',    color: '#60a5fa' },
+  paid:         { label: '유료',     color: '#f97316' },
+  'open-source':{ label: '오픈소스', color: '#a78bfa' },
 };
 
-const PRICING_LABEL: Record<string, string> = {
-  free: '무료',
-  freemium: '무료+',
-  paid: '유료',
-  'open-source': '오픈소스',
-};
+const EXAMPLES = [
+  '코딩 없이 게임을 만들고 싶어요',
+  '내 고양이 사진으로 이미지 생성하고 싶어요',
+  '웹툰을 혼자 만들 수 있는 AI 알려줘',
+  '유튜브 쇼츠 영상 자동으로 만들고 싶어',
+  'AI로 노래를 만들어 보고 싶어요',
+];
 
 export default function Home() {
+  const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
   const [input, setInput] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const [slide, setSlide] = useState(0);
+  const [fading, setFading] = useState(false);
+  const [exampleIdx, setExampleIdx] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
     fetch('/api/services/featured')
       .then(r => r.json())
-      .then(data => setServices(data.services || []));
+      .then(d => setServices(d.services || []));
   }, []);
 
-  useEffect(() => {
+  // Carousel auto-advance with fade
+  const advance = useCallback(() => {
     if (services.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentIndex(i => (i + 1) % services.length);
-    }, 3000);
-    return () => clearInterval(timer);
+    setFading(true);
+    setTimeout(() => {
+      setSlide(s => (s + 1) % services.length);
+      setFading(false);
+    }, 300);
   }, [services.length]);
+
+  useEffect(() => {
+    const t = setInterval(advance, 3500);
+    return () => clearInterval(t);
+  }, [advance]);
+
+  // Blinking cursor
+  useEffect(() => {
+    const t = setInterval(() => setShowCursor(c => !c), 530);
+    return () => clearInterval(t);
+  }, []);
+
+  // Cycle example hints
+  useEffect(() => {
+    const t = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 3000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    window.location.href = `/search?q=${encodeURIComponent(input.trim())}`;
+    const q = input.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  const visibleCount = 4;
-  const visibleServices = services.length > 0
-    ? Array.from({ length: visibleCount }, (_, i) => services[(currentIndex + i) % services.length])
+  const visible = services.length > 0
+    ? Array.from({ length: 4 }, (_, i) => services[(slide + i) % services.length])
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+
+      {/* Ambient glow */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: 'radial-gradient(ellipse 70% 50% at 50% 20%, rgba(124,106,247,0.12) 0%, transparent 70%)',
+      }} />
+
       {/* Header */}
-      <header className="border-b px-6 py-4 flex items-center justify-between shrink-0">
-        <span className="text-xl font-bold tracking-tight">세모 AI</span>
-        <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="#" className="hover:text-foreground transition-colors">탐색</a>
-          <a href="#" className="hover:text-foreground transition-colors">카테고리</a>
-          <a href="#" className="hover:text-foreground transition-colors">마이페이지</a>
+      <header style={{
+        position: 'relative', zIndex: 10,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 40px',
+        borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(12px)',
+        background: 'rgba(7,7,15,0.7)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 800, color: '#fff',
+          }}>△</div>
+          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }}>세모 AI</span>
+        </div>
+        <nav style={{ display: 'flex', gap: 32 }}>
+          {['탐색', '카테고리', '마이페이지'].map(item => (
+            <a key={item} href="#" style={{
+              fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+              {item}
+            </a>
+          ))}
         </nav>
       </header>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col items-center justify-between py-16 px-4">
+      <main style={{
+        flex: 1, position: 'relative', zIndex: 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '60px 40px 48px',
+        gap: 40,
+      }}>
+
         {/* Hero */}
-        <div className="text-center space-y-3 mb-12">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            당신이 원하는 AI는 무엇인가요?
+        <div style={{ textAlign: 'center', animation: 'fadeSlide 0.6s ease both' }}>
+          <h1 style={{
+            fontSize: 'clamp(28px, 4vw, 44px)',
+            fontWeight: 800, letterSpacing: '-1px', lineHeight: 1.2,
+            background: 'linear-gradient(135deg, #f0f0ff 30%, #7c6af7)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            marginBottom: 14,
+          }}>
+            당신이 원하는 AI는<br />무엇인가요?
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p style={{ color: 'var(--text-muted)', fontSize: 16, lineHeight: 1.6 }}>
             원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
           </p>
         </div>
 
         {/* Carousel */}
-        <div className="w-full max-w-5xl mb-12" ref={carouselRef}>
-          <div className="flex gap-4">
-            {visibleServices.length > 0 ? visibleServices.map((service, i) => (
-              <div
-                key={`${service.id}-${i}`}
-                className="flex-1 min-w-0 rounded-xl border bg-card p-5 flex flex-col gap-2 hover:border-primary/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-base leading-tight">{service.name}</h3>
-                  <Badge variant="outline" className={`text-xs shrink-0 ${PRICING_COLOR[service.pricing_type] || ''}`}>
-                    {PRICING_LABEL[service.pricing_type] || service.pricing_type}
-                  </Badge>
+        <div style={{ width: '100%', maxWidth: 1000 }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14,
+            opacity: fading ? 0 : 1, transition: 'opacity 0.3s ease',
+          }}>
+            {visible.length > 0 ? visible.map((s, i) => {
+              const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+              return (
+                <div key={`${s.id}-${i}`} style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 16, padding: '20px 18px',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                  cursor: 'pointer', transition: 'border-color 0.2s, background 0.2s, transform 0.2s',
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLDivElement;
+                  el.style.borderColor = 'var(--accent)';
+                  el.style.background = 'var(--surface-hover)';
+                  el.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLDivElement;
+                  el.style.borderColor = 'var(--border)';
+                  el.style.background = 'var(--surface)';
+                  el.style.transform = 'translateY(0)';
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>{s.name}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                      border: `1px solid ${badge.color}44`,
+                      color: badge.color, background: `${badge.color}18`,
+                      whiteSpace: 'nowrap', flexShrink: 0,
+                    }}>{badge.label}</span>
+                  </div>
+                  <p style={{
+                    fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6,
+                    flex: 1, overflow: 'hidden',
+                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                  }}>{s.tagline}</p>
+                  <span style={{
+                    fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
+                    padding: '3px 8px', background: 'rgba(255,255,255,0.04)',
+                    borderRadius: 6, alignSelf: 'flex-start',
+                  }}>{s.category_name}</span>
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
-                  {service.tagline}
-                </p>
-                <span className="text-xs text-muted-foreground/60">
-                  {service.category_name}
-                </span>
-              </div>
-            )) : (
-              Array.from({ length: visibleCount }).map((_, i) => (
-                <div key={i} className="flex-1 h-36 rounded-xl border bg-muted animate-pulse" />
-              ))
-            )}
+              );
+            }) : Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{
+                height: 160, borderRadius: 16,
+                background: 'linear-gradient(90deg, var(--surface) 25%, rgba(255,255,255,0.06) 50%, var(--surface) 75%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 1.5s infinite',
+                border: '1px solid var(--border)',
+              }} />
+            ))}
           </div>
 
           {/* Dots */}
           {services.length > 0 && (
-            <div className="flex justify-center gap-1.5 mt-4">
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 16 }}>
               {services.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentIndex(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === currentIndex ? 'bg-primary w-4' : 'bg-muted-foreground/30 w-1.5'
-                  }`}
-                />
+                <button key={i} onClick={() => setSlide(i)} style={{
+                  height: 4, width: i === slide ? 20 : 4, borderRadius: 2,
+                  background: i === slide ? 'var(--accent)' : 'rgba(255,255,255,0.15)',
+                  border: 'none', cursor: 'pointer', transition: 'all 0.3s ease', padding: 0,
+                }} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Input */}
-        <form onSubmit={handleSubmit} className="w-full max-w-2xl">
-          <div className="relative">
-            <Input
+        {/* Search */}
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 640 }}>
+          <div style={{
+            position: 'relative',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+          }}
+          onFocusCapture={e => {
+            const el = e.currentTarget as HTMLDivElement;
+            el.style.borderColor = 'var(--accent)';
+            el.style.boxShadow = '0 0 0 3px var(--accent-glow)';
+          }}
+          onBlurCapture={e => {
+            const el = e.currentTarget as HTMLDivElement;
+            el.style.borderColor = 'var(--border)';
+            el.style.boxShadow = 'none';
+          }}>
+            <input
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="예: 코딩 없이 게임을 만들고 싶어요"
-              className="h-14 pr-12 text-base rounded-xl"
+              placeholder={`예: ${EXAMPLES[exampleIdx]}`}
               autoFocus
+              style={{
+                width: '100%', background: 'transparent', border: 'none', outline: 'none',
+                padding: '18px 56px 18px 20px', fontSize: 15, color: 'var(--text)',
+                fontFamily: 'inherit',
+              }}
             />
-            <button
-              type="submit"
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-40"
-              disabled={!input.trim()}
-            >
-              <Send className="w-5 h-5 text-muted-foreground" />
+            <button type="submit" disabled={!input.trim()} style={{
+              position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+              width: 36, height: 36, borderRadius: 10, border: 'none', cursor: input.trim() ? 'pointer' : 'default',
+              background: input.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.2s',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
             </button>
           </div>
-          <p className="text-xs text-center text-muted-foreground mt-3">
-            예시: &quot;웹툰을 만들고 싶어요&quot; · &quot;내 목소리를 AI로 만들고 싶어요&quot; · &quot;사진 배경을 지우고 싶어요&quot;
+          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+            세상의 모든 AI 중에서 딱 맞는 것을 찾아드릴게요
           </p>
         </form>
       </main>
