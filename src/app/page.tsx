@@ -20,7 +20,7 @@ function ServiceLogo({ url, name, size = 48 }: { url: string; name: string; size
   const domain = getDomain(url);
   const [src, setSrc] = useState(0);
   const sources = domain ? [
-    `https://logo.clearbit.com/${domain}`,
+    `https://logo.clearbit.com/${domain}?size=512`,
     `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
   ] : [];
 
