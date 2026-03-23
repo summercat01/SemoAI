@@ -193,6 +193,13 @@ export default function Home() {
           <p style={{ color: 'var(--text-muted)', fontSize: 20 }}>
             원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
           </p>
+          <div style={{ marginTop: 20, display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(124,106,247,0.1)', border: '1px solid rgba(124,106,247,0.3)',
+            borderRadius: 100, padding: '6px 18px',
+          }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>300+</span>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>개의 AI 서비스 보유</span>
+          </div>
         </div>
 
         {/* Carousel */}
