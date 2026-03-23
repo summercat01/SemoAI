@@ -92,23 +92,23 @@ export default function Home() {
       <header style={{
         position: 'relative', zIndex: 10,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 40px',
+        padding: '28px 56px',
         backdropFilter: 'blur(16px)',
         background: 'transparent',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 8,
+            width: 40, height: 40, borderRadius: 10,
             background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 800, color: '#fff',
+            fontSize: 20, fontWeight: 800, color: '#fff',
           }}>△</div>
-          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }}>세모 AI</span>
+          <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px' }}>세모 AI</span>
         </div>
-        <nav style={{ display: 'flex', gap: 32 }}>
+        <nav style={{ display: 'flex', gap: 40 }}>
           {['탐색', '카테고리', '마이페이지'].map(item => (
             <a key={item} href="#" style={{
-              fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none',
+              fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none',
               transition: 'color 0.2s',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
@@ -124,29 +124,29 @@ export default function Home() {
         flex: 1, position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '52px 40px 44px',
+        padding: '40px 56px 56px',
       }}>
 
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: 44 }}>
           <h1 style={{
-            fontSize: 'clamp(30px, 4vw, 46px)',
-            fontWeight: 800, letterSpacing: '-1.5px', lineHeight: 1.15,
+            fontSize: 'clamp(42px, 6vw, 72px)',
+            fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
             background: 'linear-gradient(135deg, #ffffff 20%, #a78bfa 60%, #4fc3f7)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             marginBottom: 12,
           }}>
             당신이 원하는 AI는<br />무엇인가요?
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 20 }}>
             원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
           </p>
         </div>
 
         {/* Single Card */}
         <div style={{
-          width: '100%', maxWidth: 480,
-          marginBottom: 44,
+          width: '100%', maxWidth: 680,
+          marginBottom: 48,
           opacity: visible ? 1 : 0,
           transform: visible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
           transition: 'opacity 0.4s ease, transform 0.4s ease',
@@ -155,12 +155,12 @@ export default function Home() {
             <div style={{
               background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
               border: '1px solid rgba(124,106,247,0.4)',
-              borderRadius: 24, padding: '32px 30px',
-              display: 'flex', flexDirection: 'column', gap: 14,
+              borderRadius: 28, padding: '44px 40px',
+              display: 'flex', flexDirection: 'column', gap: 18,
               boxShadow: '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)',
               backdropFilter: 'blur(12px)',
               cursor: 'pointer',
-              minHeight: 200,
+              minHeight: 280,
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.7)';
@@ -171,10 +171,10 @@ export default function Home() {
               (e.currentTarget as HTMLDivElement).style.boxShadow = '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)';
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px' }}>{current.name}</span>
+                <span style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.8px' }}>{current.name}</span>
                 {badge && (
                   <span style={{
-                    fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+                    fontSize: 14, fontWeight: 600, padding: '4px 12px', borderRadius: 20,
                     border: `1px solid ${badge.color}55`,
                     color: badge.color, background: `${badge.color}18`,
                     whiteSpace: 'nowrap', flexShrink: 0, marginTop: 3,
@@ -182,7 +182,7 @@ export default function Home() {
                 )}
               </div>
               <p style={{
-                fontSize: 15, color: 'rgba(240,240,255,0.7)', lineHeight: 1.7,
+                fontSize: 18, color: 'rgba(240,240,255,0.7)', lineHeight: 1.7,
               }}>{current.tagline}</p>
               <span style={{
                 fontSize: 12, color: 'var(--text-muted)', opacity: 0.55,
@@ -202,7 +202,7 @@ export default function Home() {
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 600 }}>
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 760 }}>
           <div style={{
             position: 'relative',
             background: 'rgba(255,255,255,0.04)',
@@ -228,13 +228,13 @@ export default function Home() {
               autoFocus
               style={{
                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                padding: '18px 56px 18px 20px', fontSize: 15, color: 'var(--text)',
+                padding: '22px 68px 22px 24px', fontSize: 18, color: 'var(--text)',
                 fontFamily: 'inherit',
               }}
             />
             <button type="submit" disabled={!input.trim()} style={{
               position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-              width: 36, height: 36, borderRadius: 10, border: 'none',
+              width: 44, height: 44, borderRadius: 12, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
               background: input.trim()
                 ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)'
