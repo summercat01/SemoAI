@@ -30,7 +30,7 @@ export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
   const [active, setActive] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [stage, setStage] = useState<'idle' | 'exit' | 'enter'>('idle');
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
 
@@ -42,11 +42,12 @@ export default function Home() {
 
   const advance = useCallback(() => {
     if (services.length === 0) return;
-    setVisible(false);
+    setStage('exit');
     setTimeout(() => {
       setActive(a => (a + 1) % services.length);
-      setVisible(true);
-    }, 400);
+      setStage('enter');
+      setTimeout(() => setStage('idle'), 400);
+    }, 350);
   }, [services.length]);
 
   useEffect(() => {
@@ -144,13 +145,10 @@ export default function Home() {
         </div>
 
         {/* Single Card */}
-        <div style={{
-          width: 'min(480px, 90vw)',
-          marginBottom: 48,
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
-          transition: 'opacity 0.4s ease, transform 0.4s ease',
-        }}>
+        <div
+          className={stage === 'exit' ? 'card-exit' : stage === 'enter' ? 'card-enter' : ''}
+          style={{ width: 'min(480px, 90vw)', marginBottom: 48, overflow: 'hidden' }}
+        >
           {current ? (
             <div style={{
               background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
