@@ -252,16 +252,16 @@ export default function Home() {
                   {/* Bottom: tagline left + badge right */}
                   <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
                     <p style={{
-                      fontSize: isActive ? 13 : 11,
-                      color: 'rgba(240,240,255,0.55)', lineHeight: 1.5,
+                      fontSize: isActive ? 15 : 12,
+                      color: 'rgba(240,240,255,0.55)', lineHeight: 1.6,
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden', flex: 1, margin: 0,
+                      overflow: 'hidden', flex: 1, margin: 0, paddingRight: 8,
                     }}>{s.tagline}</p>
                     <span style={{
                       fontSize: 12, fontWeight: 600, padding: '2px 9px', borderRadius: 20,
                       border: `1px solid ${badge.color}55`,
                       color: badge.color, background: `${badge.color}18`,
-                      whiteSpace: 'nowrap', flexShrink: 0,
+                      whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-end',
                     }}>{badge.label}</span>
                   </div>
                 </div>
