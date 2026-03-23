@@ -250,7 +250,7 @@ export default function Home() {
                     <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 220 : 130} />
                   </div>
                   {/* Bottom: tagline left + badge right */}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
                     <p style={{
                       fontSize: isActive ? 15 : 12,
                       color: 'rgba(240,240,255,0.55)', lineHeight: 1.6,
