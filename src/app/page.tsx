@@ -239,7 +239,7 @@ export default function Home() {
                   {/* Top: name centered */}
                   <div style={{ textAlign: 'center' }}>
                     <span style={{
-                      fontWeight: 800, fontSize: isActive ? 33 : 24,
+                      fontWeight: 800, fontSize: isActive ? 40 : 24,
                       letterSpacing: '-0.4px', transition: 'font-size 0.4s',
                     }}>{s.name}</span>
                   </div>
