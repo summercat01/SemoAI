@@ -8,7 +8,33 @@ interface AiService {
   name: string;
   tagline: string;
   pricing_type: string;
+  website_url: string;
   category_name: string;
+}
+
+function getDomain(url: string) {
+  try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
+}
+
+function ServiceLogo({ url, name }: { url: string; name: string }) {
+  const domain = getDomain(url);
+  const [failed, setFailed] = useState(false);
+  return failed || !domain ? (
+    <div style={{
+      width: 48, height: 48, borderRadius: 12,
+      background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 20, fontWeight: 800, color: '#fff', flexShrink: 0,
+    }}>{name[0]}</div>
+  ) : (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={name}
+      onError={() => setFailed(true)}
+      style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'contain', flexShrink: 0, background: '#fff', padding: 4 }}
+    />
+  );
 }
 
 const PRICING_BADGE: Record<string, { label: string; color: string }> = {
@@ -203,12 +229,15 @@ export default function Home() {
                     transformOrigin: 'center center',
                   }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                    <span style={{
-                      fontWeight: 800,
-                      fontSize: isActive ? 28 : 20,
-                      letterSpacing: '-0.5px', lineHeight: 1.2,
-                      transition: 'font-size 0.4s',
-                    }}>{s.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <ServiceLogo url={s.website_url} name={s.name} />
+                      <span style={{
+                        fontWeight: 800,
+                        fontSize: isActive ? 24 : 18,
+                        letterSpacing: '-0.5px', lineHeight: 1.2,
+                        transition: 'font-size 0.4s',
+                      }}>{s.name}</span>
+                    </div>
                     <span style={{
                       fontSize: 13, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
                       border: `1px solid ${badge.color}55`,
