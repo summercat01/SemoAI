@@ -26,11 +26,52 @@ const EXAMPLES = [
   'AI로 노래를 만들어 보고 싶어요',
 ];
 
+function ServiceCard({ service, badge }: { service: AiService; badge: { label: string; color: string } }) {
+  return (
+    <div style={{
+      background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
+      border: '1px solid rgba(124,106,247,0.4)',
+      borderRadius: 28, padding: '40px 36px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      boxShadow: '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)',
+      backdropFilter: 'blur(12px)',
+      cursor: 'pointer',
+      aspectRatio: '1 / 1',
+    }}
+    onMouseEnter={e => {
+      (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.7)';
+      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 28px 90px rgba(124,106,247,0.3), 0 4px 24px rgba(0,0,0,0.5)';
+    }}
+    onMouseLeave={e => {
+      (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.4)';
+      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)';
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <span style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.8px' }}>{service.name}</span>
+        <span style={{
+          fontSize: 14, fontWeight: 600, padding: '4px 12px', borderRadius: 20,
+          border: `1px solid ${badge.color}55`,
+          color: badge.color, background: `${badge.color}18`,
+          whiteSpace: 'nowrap', flexShrink: 0, marginTop: 3,
+        }}>{badge.label}</span>
+      </div>
+      <p style={{ fontSize: 18, color: 'rgba(240,240,255,0.7)', lineHeight: 1.7, flex: 1 }}>
+        {service.tagline}
+      </p>
+      <span style={{
+        fontSize: 12, color: 'var(--text-muted)', opacity: 0.55,
+        padding: '4px 10px', background: 'rgba(255,255,255,0.05)',
+        borderRadius: 8, alignSelf: 'flex-start',
+      }}>{service.category_name}</span>
+    </div>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
   const [active, setActive] = useState(0);
-  const [stage, setStage] = useState<'idle' | 'exit' | 'enter'>('idle');
+  const [prev, setPrev] = useState<number | null>(null);
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
 
@@ -42,12 +83,11 @@ export default function Home() {
 
   const advance = useCallback(() => {
     if (services.length === 0) return;
-    setStage('exit');
-    setTimeout(() => {
-      setActive(a => (a + 1) % services.length);
-      setStage('enter');
-      setTimeout(() => setStage('idle'), 400);
-    }, 350);
+    setActive(a => {
+      setPrev(a);
+      return (a + 1) % services.length;
+    });
+    setTimeout(() => setPrev(null), 450);
   }, [services.length]);
 
   useEffect(() => {
@@ -145,56 +185,28 @@ export default function Home() {
         </div>
 
         {/* Single Card */}
-        <div
-          className={stage === 'exit' ? 'card-exit' : stage === 'enter' ? 'card-enter' : ''}
-          style={{ width: 'min(480px, 90vw)', marginBottom: 48, overflow: 'hidden' }}
-        >
-          {current ? (
-            <div style={{
-              background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
-              border: '1px solid rgba(124,106,247,0.4)',
-              borderRadius: 28, padding: '40px 36px',
-              display: 'flex', flexDirection: 'column', gap: 18,
-              boxShadow: '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)',
-              backdropFilter: 'blur(12px)',
-              cursor: 'pointer',
-              aspectRatio: '1 / 1',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.7)';
-              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 28px 90px rgba(124,106,247,0.3), 0 4px 24px rgba(0,0,0,0.5)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.4)';
-              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)';
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.8px' }}>{current.name}</span>
-                {badge && (
-                  <span style={{
-                    fontSize: 14, fontWeight: 600, padding: '4px 12px', borderRadius: 20,
-                    border: `1px solid ${badge.color}55`,
-                    color: badge.color, background: `${badge.color}18`,
-                    whiteSpace: 'nowrap', flexShrink: 0, marginTop: 3,
-                  }}>{badge.label}</span>
-                )}
+        <div style={{ width: 'min(480px, 90vw)', marginBottom: 48, position: 'relative' }}>
+          {/* Exiting card */}
+          {prev !== null && services[prev] && (() => {
+            const s = services[prev];
+            const b = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+            return (
+              <div key={`exit-${prev}`} className="card-exit" style={{ position: 'absolute', inset: 0 }}>
+                <ServiceCard service={s} badge={b} />
               </div>
-              <p style={{
-                fontSize: 18, color: 'rgba(240,240,255,0.7)', lineHeight: 1.7,
-              }}>{current.tagline}</p>
-              <span style={{
-                fontSize: 12, color: 'var(--text-muted)', opacity: 0.55,
-                padding: '4px 10px', background: 'rgba(255,255,255,0.05)',
-                borderRadius: 8, alignSelf: 'flex-start',
-              }}>{current.category_name}</span>
+            );
+          })()}
+          {/* Entering card */}
+          {current && (
+            <div key={`enter-${active}`} className="card-enter">
+              <ServiceCard service={current} badge={badge!} />
             </div>
-          ) : (
+          )}
+          {!current && (
             <div style={{
-              height: 200, borderRadius: 24,
+              aspectRatio: '1/1', borderRadius: 24,
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid var(--border)',
-              animation: 'shimmer 1.5s infinite',
-              backgroundSize: '200% 100%',
             }} />
           )}
         </div>
