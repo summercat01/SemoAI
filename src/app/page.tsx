@@ -18,20 +18,28 @@ function getDomain(url: string) {
 
 function ServiceLogo({ url, name }: { url: string; name: string }) {
   const domain = getDomain(url);
-  const [failed, setFailed] = useState(false);
-  return failed || !domain ? (
-    <div style={{
-      width: 48, height: 48, borderRadius: 12,
-      background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 20, fontWeight: 800, color: '#fff', flexShrink: 0,
-    }}>{name[0]}</div>
-  ) : (
+  const [src, setSrc] = useState(0);
+  const sources = domain ? [
+    `https://logo.clearbit.com/${domain}`,
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+  ] : [];
+
+  if (!domain || src >= sources.length) {
+    return (
+      <div style={{
+        width: 48, height: 48, borderRadius: 12,
+        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 20, fontWeight: 800, color: '#fff', flexShrink: 0,
+      }}>{name[0]}</div>
+    );
+  }
+  return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`https://logo.clearbit.com/${domain}`}
+      src={sources[src]}
       alt={name}
-      onError={() => setFailed(true)}
+      onError={() => setSrc(s => s + 1)}
       style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'contain', flexShrink: 0, background: '#fff', padding: 4 }}
     />
   );
