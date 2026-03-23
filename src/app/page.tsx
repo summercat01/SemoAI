@@ -26,54 +26,28 @@ const EXAMPLES = [
   'AI로 노래를 만들어 보고 싶어요',
 ];
 
-function ServiceCard({ service, badge }: { service: AiService; badge: { label: string; color: string } }) {
-  return (
-    <div style={{
-      background: 'linear-gradient(145deg, rgba(124,106,247,0.12), rgba(10,10,25,0.95))',
-      border: '1px solid rgba(124,106,247,0.4)',
-      borderRadius: 28, padding: '40px 36px',
-      display: 'flex', flexDirection: 'column', gap: 18,
-      boxShadow: '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)',
-      backdropFilter: 'blur(12px)',
-      cursor: 'pointer',
-      aspectRatio: '1 / 1',
-    }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.7)';
-      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 28px 90px rgba(124,106,247,0.3), 0 4px 24px rgba(0,0,0,0.5)';
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,106,247,0.4)';
-      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 24px 80px rgba(124,106,247,0.2), 0 4px 24px rgba(0,0,0,0.5)';
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <span style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.8px' }}>{service.name}</span>
-        <span style={{
-          fontSize: 14, fontWeight: 600, padding: '4px 12px', borderRadius: 20,
-          border: `1px solid ${badge.color}55`,
-          color: badge.color, background: `${badge.color}18`,
-          whiteSpace: 'nowrap', flexShrink: 0, marginTop: 3,
-        }}>{badge.label}</span>
-      </div>
-      <p style={{ fontSize: 18, color: 'rgba(240,240,255,0.7)', lineHeight: 1.7, flex: 1 }}>
-        {service.tagline}
-      </p>
-      <span style={{
-        fontSize: 12, color: 'var(--text-muted)', opacity: 0.55,
-        padding: '4px 10px', background: 'rgba(255,255,255,0.05)',
-        borderRadius: 8, alignSelf: 'flex-start',
-      }}>{service.category_name}</span>
-    </div>
-  );
+// pos: -1 (left), 0 (center), 1 (right), else hidden
+function cardTransform(pos: number): React.CSSProperties {
+  if (Math.abs(pos) > 1) return { opacity: 0, pointerEvents: 'none', transform: `translateX(${pos > 0 ? 180 : -180}%) translateZ(-200px) scale(0.4)` };
+  const tx = pos * 62; // % of card width
+  const tz = pos === 0 ? 0 : -120;
+  const ry = pos * -40;
+  const scale = pos === 0 ? 1 : 0.75;
+  const opacity = pos === 0 ? 1 : 0.5;
+  return {
+    transform: `translateX(${tx}%) translateZ(${tz}px) rotateY(${ry}deg) scale(${scale})`,
+    opacity,
+    zIndex: pos === 0 ? 10 : 5,
+  };
 }
 
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
   const [active, setActive] = useState(0);
-  const [prev, setPrev] = useState<number | null>(null);
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     fetch('/api/services/featured')
@@ -82,23 +56,25 @@ export default function Home() {
   }, []);
 
   const advance = useCallback(() => {
-    if (services.length === 0) return;
-    setActive(a => {
-      setPrev(a);
-      return (a + 1) % services.length;
-    });
-    setTimeout(() => setPrev(null), 450);
-  }, [services.length]);
+    if (services.length === 0 || paused) return;
+    setActive(a => (a + 1) % services.length);
+  }, [services.length, paused]);
 
   useEffect(() => {
-    const t = setInterval(advance, 3500);
+    const t = setInterval(advance, 3200);
     return () => clearInterval(t);
   }, [advance]);
 
   useEffect(() => {
-    const t = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 3200);
+    const t = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 3400);
     return () => clearInterval(t);
   }, []);
+
+  const goTo = (idx: number) => {
+    setActive(idx);
+    setPaused(true);
+    setTimeout(() => setPaused(false), 5000);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,8 +83,7 @@ export default function Home() {
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  const current = services[active];
-  const badge = current ? (PRICING_BADGE[current.pricing_type] ?? { label: current.pricing_type, color: '#888' }) : null;
+  const len = services.length;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -116,16 +91,16 @@ export default function Home() {
       {/* Background glow */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{
-          position: 'absolute', width: 700, height: 700,
-          borderRadius: '50%', filter: 'blur(130px)',
+          position: 'absolute', width: 800, height: 800,
+          borderRadius: '50%', filter: 'blur(140px)',
           background: 'rgba(124,106,247,0.13)',
-          top: '-15%', left: '50%', transform: 'translateX(-50%)',
+          top: '-20%', left: '50%', transform: 'translateX(-50%)',
         }} />
         <div style={{
           position: 'absolute', width: 400, height: 400,
           borderRadius: '50%', filter: 'blur(100px)',
           background: 'rgba(79,195,247,0.08)',
-          bottom: '10%', right: '10%',
+          bottom: '5%', right: '5%',
         }} />
       </div>
 
@@ -134,8 +109,6 @@ export default function Home() {
         position: 'relative', zIndex: 10,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '28px 56px',
-        backdropFilter: 'blur(16px)',
-        background: 'transparent',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -149,8 +122,7 @@ export default function Home() {
         <nav style={{ display: 'flex', gap: 40 }}>
           {['탐색', '카테고리', '마이페이지'].map(item => (
             <a key={item} href="#" style={{
-              fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none',
-              transition: 'color 0.2s',
+              fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
@@ -165,17 +137,17 @@ export default function Home() {
         flex: 1, position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '40px 56px 56px',
+        padding: '32px 56px 52px',
       }}>
 
         {/* Hero */}
-        <div style={{ textAlign: 'center', marginBottom: 44 }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <h1 style={{
             fontSize: 'clamp(42px, 6vw, 72px)',
             fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
             background: 'linear-gradient(135deg, #ffffff 20%, #a78bfa 60%, #4fc3f7)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            marginBottom: 12,
+            marginBottom: 14,
           }}>
             당신이 원하는 AI는<br />무엇인가요?
           </h1>
@@ -184,31 +156,82 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Single Card */}
-        <div style={{ width: 'min(480px, 90vw)', marginBottom: 48, position: 'relative' }}>
-          {/* Exiting card */}
-          {prev !== null && services[prev] && (() => {
-            const s = services[prev];
-            const b = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+        {/* 3-card Coverflow */}
+        <div style={{
+          width: '100%', maxWidth: 900,
+          height: 340, marginBottom: 48,
+          position: 'relative',
+          perspective: '1000px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {len > 0 && [-1, 0, 1].map(offset => {
+            const idx = ((active + offset) % len + len) % len;
+            const s = services[idx];
+            const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+            const isCenter = offset === 0;
             return (
-              <div key={`exit-${prev}`} className="card-exit" style={{ position: 'absolute', inset: 0 }}>
-                <ServiceCard service={s} badge={b} />
+              <div
+                key={idx}
+                onClick={() => !isCenter && goTo(idx)}
+                style={{
+                  position: 'absolute',
+                  width: 'min(360px, 42vw)',
+                  aspectRatio: '1 / 1',
+                  ...cardTransform(offset),
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: isCenter ? 'default' : 'pointer',
+                  transformStyle: 'preserve-3d',
+                  left: '50%',
+                  marginLeft: `calc(min(-180px, -21vw))`,
+                }}
+              >
+                <div style={{
+                  width: '100%', height: '100%',
+                  background: isCenter
+                    ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
+                    : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isCenter ? 'rgba(124,106,247,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 28,
+                  padding: isCenter ? '36px 32px' : '28px 24px',
+                  display: 'flex', flexDirection: 'column', gap: 14,
+                  boxShadow: isCenter
+                    ? '0 24px 80px rgba(124,106,247,0.25), 0 4px 24px rgba(0,0,0,0.6)'
+                    : '0 4px 20px rgba(0,0,0,0.4)',
+                  backdropFilter: 'blur(12px)',
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{
+                      fontWeight: 800,
+                      fontSize: isCenter ? 28 : 18,
+                      letterSpacing: '-0.5px', lineHeight: 1.2,
+                      transition: 'font-size 0.5s',
+                    }}>{s.name}</span>
+                    <span style={{
+                      fontSize: isCenter ? 13 : 11, fontWeight: 600,
+                      padding: isCenter ? '3px 10px' : '2px 8px', borderRadius: 20,
+                      border: `1px solid ${badge.color}55`,
+                      color: badge.color, background: `${badge.color}18`,
+                      whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
+                    }}>{badge.label}</span>
+                  </div>
+                  <p style={{
+                    fontSize: isCenter ? 16 : 13,
+                    color: 'rgba(240,240,255,0.65)', lineHeight: 1.65,
+                    flex: 1, overflow: 'hidden',
+                    display: '-webkit-box', WebkitLineClamp: isCenter ? 5 : 4, WebkitBoxOrient: 'vertical',
+                    transition: 'font-size 0.5s',
+                  }}>{s.tagline}</p>
+                  <span style={{
+                    fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
+                    padding: '3px 8px', background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 6, alignSelf: 'flex-start',
+                  }}>{s.category_name}</span>
+                </div>
               </div>
             );
-          })()}
-          {/* Entering card */}
-          {current && (
-            <div key={`enter-${active}`} className="card-enter">
-              <ServiceCard service={current} badge={badge!} />
-            </div>
-          )}
-          {!current && (
-            <div style={{
-              aspectRatio: '1/1', borderRadius: 24,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid var(--border)',
-            }} />
-          )}
+          })}
         </div>
 
         {/* Search */}
@@ -217,8 +240,7 @@ export default function Home() {
             position: 'relative',
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid var(--border)',
-            borderRadius: 16,
-            backdropFilter: 'blur(8px)',
+            borderRadius: 16, backdropFilter: 'blur(8px)',
             transition: 'border-color 0.2s, box-shadow 0.2s',
           }}
           onFocusCapture={e => {
@@ -238,26 +260,23 @@ export default function Home() {
               autoFocus
               style={{
                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                padding: '22px 68px 22px 24px', fontSize: 18, color: 'var(--text)',
-                fontFamily: 'inherit',
+                padding: '22px 68px 22px 24px', fontSize: 18, color: 'var(--text)', fontFamily: 'inherit',
               }}
             />
             <button type="submit" disabled={!input.trim()} style={{
-              position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
               width: 44, height: 44, borderRadius: 12, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
-              background: input.trim()
-                ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)'
-                : 'rgba(255,255,255,0.07)',
+              background: input.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.25s',
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
             </button>
           </div>
-          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>
             세상의 모든 AI 중에서 딱 맞는 것을 찾아드릴게요
           </p>
         </form>
