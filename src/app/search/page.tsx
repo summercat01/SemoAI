@@ -553,16 +553,6 @@ function SearchContent() {
           background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)', flexShrink: 0,
         }}>
           <div style={{ maxWidth: 960, margin: '0 auto' }}>
-            {pendingQuestion && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                marginBottom: 8, padding: '7px 14px', borderRadius: 10,
-                background: 'rgba(124,106,247,0.07)', border: '1px solid rgba(124,106,247,0.18)',
-              }}>
-                <span style={{ fontSize: 12 }}>💬</span>
-                <span style={{ fontSize: 13, color: '#c4b5fd' }}>{pendingQuestion}</span>
-              </div>
-            )}
             <form onSubmit={handleSubmit}>
               <div style={{
                 display: 'flex', gap: 10, alignItems: 'flex-end',
