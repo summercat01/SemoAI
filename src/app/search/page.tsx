@@ -17,18 +17,6 @@ interface ServiceResult {
   category_slug: string;
 }
 
-interface QuestionOption {
-  label: string;
-  add_categories: string[];
-  add_tags: string[];
-  add_keywords: string[];
-}
-
-interface NextQuestion {
-  question: string;
-  options: QuestionOption[];
-}
-
 interface Filters {
   categories: string[];
   tags: string[];
@@ -75,6 +63,55 @@ const PRICING_BADGE: Record<string, { label: string; color: string }> = {
   'open-source': { label: '오픈소스', color: '#a78bfa' },
 };
 
+function ResultCard({ s }: { s: ServiceResult }) {
+  const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
+  return (
+    <a
+      href={s.website_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 10, padding: '16px',
+        borderRadius: 14,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid var(--border)',
+        textDecoration: 'none', color: 'inherit',
+        transition: 'all 0.2s',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget;
+        el.style.borderColor = 'rgba(124,106,247,0.45)';
+        el.style.background = 'rgba(124,106,247,0.05)';
+        el.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget;
+        el.style.borderColor = 'var(--border)';
+        el.style.background = 'rgba(255,255,255,0.04)';
+        el.style.transform = 'translateY(0)';
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <ServiceLogo url={s.website_url} name={s.name} size={40} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{s.name}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s.category_name}</div>
+        </div>
+        <span style={{
+          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+          border: `1px solid ${badge.color}55`,
+          color: badge.color, background: `${badge.color}18`,
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>{badge.label}</span>
+      </div>
+      <p style={{
+        fontSize: 13, color: 'rgba(240,240,255,0.65)', lineHeight: 1.5, margin: 0,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+      }}>{s.tagline}</p>
+    </a>
+  );
+}
+
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -82,23 +119,21 @@ function SearchContent() {
 
   const [input, setInput] = useState(initialQuery);
   const [originalQuery, setOriginalQuery] = useState(initialQuery);
+  const [followInput, setFollowInput] = useState('');
 
-  // Conversation state
   const [results, setResults] = useState<ServiceResult[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState('');
-  const [nextQuestion, setNextQuestion] = useState<NextQuestion | null>(null);
+  const [nextQuestion, setNextQuestion] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({ categories: [], tags: [], keywords: [] });
   const [round, setRound] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  const doSearch = useCallback(async (
-    query: string,
-    currentFilters: Filters,
-    currentRound: number
-  ) => {
+  const doSearch = useCallback(async (query: string, currentFilters: Filters, currentRound: number) => {
     setLoading(true);
+    setExpanded(false);
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
@@ -137,7 +172,6 @@ function SearchContent() {
     e.preventDefault();
     const q = input.trim();
     if (!q) return;
-    // Reset conversation
     setOriginalQuery(q);
     setRound(0);
     setFilters({ categories: [], tags: [], keywords: [] });
@@ -146,22 +180,21 @@ function SearchContent() {
     doSearch(q, { categories: [], tags: [], keywords: [] }, 0);
   };
 
-  const handleOptionClick = (option: QuestionOption) => {
-    const newFilters: Filters = {
-      categories: [...new Set([...filters.categories, ...option.add_categories])],
-      tags: [...new Set([...filters.tags, ...option.add_tags])],
-      keywords: [...new Set([...filters.keywords, ...option.add_keywords])],
-    };
+  const handleFollowUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = followInput.trim();
+    if (!q) return;
     const newRound = round + 1;
     setRound(newRound);
-    setFilters(newFilters);
+    setFollowInput('');
     setNextQuestion(null);
-    doSearch(originalQuery, newFilters, newRound);
+    doSearch(q, filters, newRound);
   };
+
+  const PREVIEW_COUNT = 6;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
-      {/* Bg glow */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{
           position: 'absolute', width: 600, height: 600, borderRadius: '50%',
@@ -175,7 +208,7 @@ function SearchContent() {
         position: 'sticky', top: 0, zIndex: 10,
         display: 'flex', alignItems: 'center', gap: 20,
         padding: '14px 32px',
-        background: 'rgba(7,7,15,0.85)', backdropFilter: 'blur(12px)',
+        background: 'rgba(7,7,15,0.88)', backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border)',
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
@@ -190,7 +223,6 @@ function SearchContent() {
             <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>세상의 모든 AI</div>
           </div>
         </a>
-
         <form onSubmit={handleNewSearch} style={{ flex: 1, maxWidth: 680 }}>
           <div style={{
             position: 'relative',
@@ -223,10 +255,8 @@ function SearchContent() {
         </form>
       </header>
 
-      {/* Content */}
-      <main style={{ position: 'relative', zIndex: 1, padding: '28px 32px', maxWidth: 1100, margin: '0 auto' }}>
+      <main style={{ position: 'relative', zIndex: 1, padding: '32px 32px', maxWidth: 1100, margin: '0 auto' }}>
 
-        {/* Loading */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{
@@ -242,131 +272,120 @@ function SearchContent() {
         )}
 
         {!loading && searched && (
-          <>
-            {/* Result count + summary */}
-            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: 28, fontWeight: 800,
-                background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>{total.toLocaleString()}개</span>
-              <span style={{ fontSize: 15, color: 'var(--text-muted)' }}>
-                {summary || '서비스를 찾았어요'}
-              </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {/* Count + summary */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: 42, fontWeight: 900, letterSpacing: '-1px',
+                  background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>{total.toLocaleString()}</span>
+                <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>개 서비스 발견</span>
+              </div>
+              {summary && (
+                <p style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>{summary}</p>
+              )}
             </div>
 
-            {/* Results grid */}
-            {results.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: 14,
-                marginBottom: 28,
-              }}>
-                {results.map(s => {
-                  const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
-                  return (
-                    <a
-                      key={s.id}
-                      href={s.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+            {/* Preview grid (first 6) */}
+            {results.length > 0 && (
+              <>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: 14,
+                }}>
+                  {(expanded ? results : results.slice(0, PREVIEW_COUNT)).map(s => (
+                    <ResultCard key={s.id} s={s} />
+                  ))}
+                </div>
+
+                {/* 자세히보기 / 접기 */}
+                {results.length > PREVIEW_COUNT && (
+                  <div style={{ textAlign: 'center' }}>
+                    <button
+                      onClick={() => setExpanded(v => !v)}
                       style={{
-                        display: 'flex', flexDirection: 'column', gap: 10,
-                        padding: '16px',
-                        borderRadius: 14,
-                        background: 'rgba(255,255,255,0.04)',
+                        padding: '10px 28px', borderRadius: 20,
                         border: '1px solid var(--border)',
-                        textDecoration: 'none', color: 'inherit',
-                        transition: 'all 0.2s',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer',
+                        fontFamily: 'inherit', transition: 'all 0.2s',
                       }}
                       onMouseEnter={e => {
-                        const el = e.currentTarget;
-                        el.style.borderColor = 'rgba(124,106,247,0.45)';
-                        el.style.background = 'rgba(124,106,247,0.05)';
-                        el.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.borderColor = 'rgba(124,106,247,0.5)';
+                        e.currentTarget.style.color = 'var(--text)';
                       }}
                       onMouseLeave={e => {
-                        const el = e.currentTarget;
-                        el.style.borderColor = 'var(--border)';
-                        el.style.background = 'rgba(255,255,255,0.04)';
-                        el.style.transform = 'translateY(0)';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.color = 'var(--text-muted)';
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <ServiceLogo url={s.website_url} name={s.name} size={40} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: 15 }}>{s.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s.category_name}</div>
-                        </div>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                          border: `1px solid ${badge.color}55`,
-                          color: badge.color, background: `${badge.color}18`,
-                          whiteSpace: 'nowrap', flexShrink: 0,
-                        }}>{badge.label}</span>
-                      </div>
-                      <p style={{
-                        fontSize: 13, color: 'rgba(240,240,255,0.65)', lineHeight: 1.5, margin: 0,
-                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                      }}>{s.tagline}</p>
-                    </a>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '60px 0', marginBottom: 28 }}>
+                      {expanded
+                        ? '접기'
+                        : `자세히 보기 (${results.length}개 전체)`}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {results.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
-                <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>결과를 찾지 못했어요</p>
-                <p style={{ color: 'var(--text-muted)' }}>다른 방식으로 설명해보세요</p>
+                <p style={{ fontSize: 18, fontWeight: 600 }}>결과를 찾지 못했어요</p>
+                <p style={{ color: 'var(--text-muted)', marginTop: 6 }}>다른 방식으로 설명해보세요</p>
               </div>
             )}
 
             {/* Follow-up question */}
             {nextQuestion && (
               <div style={{
-                background: 'rgba(124,106,247,0.08)',
-                border: '1px solid rgba(124,106,247,0.25)',
+                background: 'rgba(124,106,247,0.07)',
+                border: '1px solid rgba(124,106,247,0.22)',
                 borderRadius: 16, padding: '20px 24px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <div style={{
-                    width: 24, height: 24, borderRadius: 6,
+                    width: 22, height: 22, borderRadius: 6,
                     background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0,
+                    fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0,
                   }}>△</div>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: '#a78bfa' }}>
-                    {nextQuestion.question}
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#c4b5fd' }}>
+                    {nextQuestion}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {nextQuestion.options.map((opt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleOptionClick(opt)}
-                      style={{
-                        padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(124,106,247,0.4)',
-                        background: 'rgba(124,106,247,0.1)', color: 'var(--text)',
-                        fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(124,106,247,0.25)';
-                        e.currentTarget.style.borderColor = 'rgba(124,106,247,0.7)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(124,106,247,0.1)';
-                        e.currentTarget.style.borderColor = 'rgba(124,106,247,0.4)';
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                <form onSubmit={handleFollowUp} style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={followInput}
+                    onChange={e => setFollowInput(e.target.value)}
+                    placeholder="자연어로 답변해주세요..."
+                    autoFocus
+                    style={{
+                      flex: 1, background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(124,106,247,0.3)',
+                      borderRadius: 10, padding: '10px 14px',
+                      fontSize: 14, color: 'var(--text)', fontFamily: 'inherit', outline: 'none',
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = 'rgba(124,106,247,0.7)'}
+                    onBlur={e => e.currentTarget.style.borderColor = 'rgba(124,106,247,0.3)'}
+                  />
+                  <button type="submit" disabled={!followInput.trim()} style={{
+                    padding: '10px 20px', borderRadius: 10, border: 'none',
+                    background: followInput.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
+                    color: '#fff', fontSize: 14, cursor: followInput.trim() ? 'pointer' : 'default',
+                    fontFamily: 'inherit', fontWeight: 600, transition: 'background 0.2s',
+                  }}>
+                    좁히기
+                  </button>
+                </form>
               </div>
             )}
-          </>
+
+          </div>
         )}
 
         {!loading && !searched && (
