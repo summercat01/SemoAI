@@ -193,10 +193,15 @@ export async function POST(req: NextRequest) {
     // Get results with current filters
     const results = await queryServices(mergedCategories, mergedTags, mergedKeywords);
 
-    // Generate follow-up question if needed
-    const nextQuestion = await generateNextQuestion(
-      query, mergedCategories, mergedTags, results.length, round
-    );
+    // Generate follow-up question if needed (non-blocking)
+    let nextQuestion = null;
+    try {
+      nextQuestion = await generateNextQuestion(
+        query, mergedCategories, mergedTags, results.length, round
+      );
+    } catch {
+      // question generation failure is non-fatal
+    }
 
     // Show up to 24 for display
     return NextResponse.json({
