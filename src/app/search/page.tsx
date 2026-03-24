@@ -357,7 +357,7 @@ function SearchContent() {
 
             {/* 자세히보기 button */}
             {total > 0 && !showResults && (
-              <div>
+              <div style={{ textAlign: 'center' }}>
                 <button
                   onClick={handleShowResults}
                   style={{
