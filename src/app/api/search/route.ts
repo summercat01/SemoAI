@@ -198,11 +198,7 @@ export async function POST(req: NextRequest) {
     const params: (string[] | string)[] = [mergedCategories, mergedTags];
     kw.forEach(k => params.push(`%${k.toLowerCase()}%`));
 
-    // Get exact count + results in parallel
-    const [total, results] = await Promise.all([
-      getCount(mergedCategories, mergedTags, kw, params),
-      getResults(mergedCategories, mergedTags, kw, params),
-    ]);
+    const total = await getCount(mergedCategories, mergedTags, kw, params);
 
     // Generate follow-up question
     let nextQuestion: string | null = null;
@@ -211,7 +207,6 @@ export async function POST(req: NextRequest) {
     } catch { /* non-fatal */ }
 
     return NextResponse.json({
-      results,
       total,
       summary,
       nextQuestion,

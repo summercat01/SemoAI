@@ -112,6 +112,8 @@ function ResultCard({ s }: { s: ServiceResult }) {
   );
 }
 
+const PAGE_SIZE = 24;
+
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,7 +123,6 @@ function SearchContent() {
   const [originalQuery, setOriginalQuery] = useState(initialQuery);
   const [followInput, setFollowInput] = useState('');
 
-  const [results, setResults] = useState<ServiceResult[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState('');
   const [nextQuestion, setNextQuestion] = useState<string | null>(null);
@@ -129,11 +130,44 @@ function SearchContent() {
   const [round, setRound] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+
+  // Pagination state
+  const [pageResults, setPageResults] = useState<ServiceResult[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showResults, setShowResults] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const fetchPage = useCallback(async (page: number, currentFilters: Filters) => {
+    setPageLoading(true);
+    try {
+      const res = await fetch('/api/search/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categories: currentFilters.categories,
+          tags: currentFilters.tags,
+          keywords: currentFilters.keywords,
+          page,
+          pageSize: PAGE_SIZE,
+        }),
+      });
+      const data = await res.json();
+      setPageResults(data.results || []);
+      setCurrentPage(page);
+    } catch {
+      setPageResults([]);
+    } finally {
+      setPageLoading(false);
+    }
+  }, []);
 
   const doSearch = useCallback(async (query: string, currentFilters: Filters, currentRound: number) => {
     setLoading(true);
-    setExpanded(false);
+    setShowResults(false);
+    setPageResults([]);
+    setCurrentPage(1);
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
@@ -147,14 +181,13 @@ function SearchContent() {
         }),
       });
       const data = await res.json();
-      setResults(data.results || []);
       setTotal(data.total || 0);
       setSummary(data.summary || '');
       setNextQuestion(data.nextQuestion || null);
       setFilters(data.filters || currentFilters);
       setSearched(true);
     } catch {
-      setResults([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -191,7 +224,32 @@ function SearchContent() {
     doSearch(q, filters, newRound);
   };
 
-  const PREVIEW_COUNT = 6;
+  const handleShowResults = () => {
+    setShowResults(true);
+    fetchPage(1, filters);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    fetchPage(page, filters);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Page number display (e.g. show up to 7 page buttons)
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [];
+    if (currentPage <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push('...', totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1, '...');
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+    return pages;
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
@@ -289,54 +347,114 @@ function SearchContent() {
               )}
             </div>
 
-            {/* Preview grid (first 6) */}
-            {results.length > 0 && (
-              <>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: 14,
-                }}>
-                  {(expanded ? results : results.slice(0, PREVIEW_COUNT)).map(s => (
-                    <ResultCard key={s.id} s={s} />
-                  ))}
-                </div>
-
-                {/* 자세히보기 / 접기 */}
-                {results.length > PREVIEW_COUNT && (
-                  <div style={{ textAlign: 'center' }}>
-                    <button
-                      onClick={() => setExpanded(v => !v)}
-                      style={{
-                        padding: '10px 28px', borderRadius: 20,
-                        border: '1px solid var(--border)',
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer',
-                        fontFamily: 'inherit', transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = 'rgba(124,106,247,0.5)';
-                        e.currentTarget.style.color = 'var(--text)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                        e.currentTarget.style.color = 'var(--text-muted)';
-                      }}
-                    >
-                      {expanded
-                        ? '접기'
-                        : `자세히 보기 (${results.length}개 전체)`}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {results.length === 0 && (
+            {total === 0 && (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
                 <p style={{ fontSize: 18, fontWeight: 600 }}>결과를 찾지 못했어요</p>
                 <p style={{ color: 'var(--text-muted)', marginTop: 6 }}>다른 방식으로 설명해보세요</p>
+              </div>
+            )}
+
+            {/* 자세히보기 button */}
+            {total > 0 && !showResults && (
+              <div>
+                <button
+                  onClick={handleShowResults}
+                  style={{
+                    padding: '12px 32px', borderRadius: 20,
+                    border: '1px solid rgba(124,106,247,0.4)',
+                    background: 'rgba(124,106,247,0.08)',
+                    color: '#c4b5fd', fontSize: 15, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(124,106,247,0.16)';
+                    e.currentTarget.style.borderColor = 'rgba(124,106,247,0.7)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(124,106,247,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(124,106,247,0.4)';
+                  }}
+                >
+                  자세히 보기 ({total.toLocaleString()}개 전체)
+                </button>
+              </div>
+            )}
+
+            {/* Paginated results */}
+            {showResults && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {pageLoading ? (
+                  <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <div style={{
+                      display: 'inline-block', width: 32, height: 32, borderRadius: '50%',
+                      border: '3px solid var(--border)', borderTopColor: '#7c6af7',
+                      animation: 'spin 0.8s linear infinite',
+                    }} />
+                  </div>
+                ) : (
+                  <>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                      gap: 14,
+                    }}>
+                      {pageResults.map(s => <ResultCard key={s.id} s={s} />)}
+                    </div>
+
+                    {/* Pagination controls */}
+                    {totalPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap', paddingTop: 8 }}>
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          style={{
+                            padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                            background: 'rgba(255,255,255,0.04)', color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text)',
+                            cursor: currentPage === 1 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 14,
+                            opacity: currentPage === 1 ? 0.4 : 1, transition: 'all 0.15s',
+                          }}
+                        >
+                          ← 이전
+                        </button>
+
+                        {getPageNumbers().map((p, i) =>
+                          p === '...' ? (
+                            <span key={`dots-${i}`} style={{ color: 'var(--text-muted)', padding: '0 4px' }}>…</span>
+                          ) : (
+                            <button
+                              key={p}
+                              onClick={() => handlePageChange(p as number)}
+                              style={{
+                                width: 36, height: 36, borderRadius: 8, border: '1px solid',
+                                borderColor: currentPage === p ? 'rgba(124,106,247,0.6)' : 'var(--border)',
+                                background: currentPage === p ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)',
+                                color: currentPage === p ? '#c4b5fd' : 'var(--text)',
+                                cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: currentPage === p ? 700 : 400,
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {p}
+                            </button>
+                          )
+                        )}
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          style={{
+                            padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                            background: 'rgba(255,255,255,0.04)', color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text)',
+                            cursor: currentPage === totalPages ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 14,
+                            opacity: currentPage === totalPages ? 0.4 : 1, transition: 'all 0.15s',
+                          }}
+                        >
+                          다음 →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
