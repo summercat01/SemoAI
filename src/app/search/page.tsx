@@ -236,50 +236,57 @@ function AiBubble({ msg, showResults, onToggleResults }: {
         ) : (
           <div style={{
             background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
-            borderRadius: 16, padding: '18px 20px',
+            borderRadius: 16, overflow: 'hidden',
           }}>
-            {/* Count */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-              <span style={{
-                fontSize: 40, fontWeight: 900, letterSpacing: '-1px',
-                background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>{msg.total.toLocaleString()}</span>
-              <span style={{ fontSize: 17, fontWeight: 600 }}>개 서비스 발견</span>
+            {/* Count + 자세히보기 — centered, prominent */}
+            <div style={{ textAlign: 'center', padding: '24px 24px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+                <span style={{
+                  fontSize: 56, fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
+                  background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>{msg.total.toLocaleString()}</span>
+                <span style={{ fontSize: 22, fontWeight: 700 }}>개 서비스 발견</span>
+              </div>
+              {msg.summary && (
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 16px' }}>{msg.summary}</p>
+              )}
+              {msg.total > 0 && (
+                <button
+                  onClick={onToggleResults}
+                  style={{
+                    padding: '10px 28px', borderRadius: 20,
+                    border: `1px solid ${showResults ? 'rgba(124,106,247,0.5)' : 'rgba(124,106,247,0.35)'}`,
+                    background: showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)',
+                    color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'inherit', transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.2)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)'; }}
+                >
+                  {showResults ? '접기 ↑' : `자세히 보기 (${msg.total.toLocaleString()}개 전체)`}
+                </button>
+              )}
             </div>
 
-            {msg.summary && (
-              <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 14px' }}>{msg.summary}</p>
-            )}
-
-            {msg.total > 0 && (
-              <button
-                onClick={onToggleResults}
-                style={{
-                  padding: '8px 20px', borderRadius: 20, marginBottom: msg.nextQuestion ? 14 : 0,
-                  border: `1px solid ${showResults ? 'rgba(124,106,247,0.5)' : 'rgba(124,106,247,0.35)'}`,
-                  background: showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.07)',
-                  color: '#c4b5fd', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  fontFamily: 'inherit', transition: 'all 0.2s',
-                }}
-              >
-                {showResults ? '접기 ↑' : `자세히 보기 (${msg.total.toLocaleString()}개 전체)`}
-              </button>
-            )}
-
-            {msg.nextQuestion && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(124,106,247,0.08)', border: '1px solid rgba(124,106,247,0.18)',
-              }}>
-                <span style={{ fontSize: 16 }}>💬</span>
-                <span style={{ fontSize: 14, color: '#c4b5fd', fontWeight: 500 }}>{msg.nextQuestion}</span>
+            {/* Results panel */}
+            {showResults && (
+              <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px' }}>
+                <ResultsPanel filters={msg.filters} total={msg.total} onClose={onToggleResults} />
               </div>
             )}
 
-            {showResults && (
-              <ResultsPanel filters={msg.filters} total={msg.total} onClose={onToggleResults} />
+            {/* Follow-up question */}
+            {msg.nextQuestion && (
+              <div style={{
+                borderTop: '1px solid var(--border)',
+                padding: '14px 20px',
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(124,106,247,0.05)',
+              }}>
+                <span style={{ fontSize: 15 }}>💬</span>
+                <span style={{ fontSize: 14, color: '#c4b5fd', fontWeight: 500 }}>{msg.nextQuestion}</span>
+              </div>
             )}
           </div>
         )}
