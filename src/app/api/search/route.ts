@@ -89,37 +89,53 @@ async function generateNextQuestion(
   return block.type === 'text' ? block.text.trim().replace(/^["']|["']$/g, '') : null;
 }
 
-async function getCount(categories: string[], tags: string[], kw: string[], params: (string[] | string)[]) {
+function buildWhere(categories: string[], tags: string[], kw: string[]): string {
+  const hasScope = categories.length > 0 || tags.length > 0;
   const kwConditions = kw.map((_, i) =>
     `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`
   );
-  const kwWhere = kwConditions.length > 0 ? `OR (${kwConditions.join(' OR ')})` : '';
 
+  const scopePart = `(
+    c.slug = ANY($1::text[])
+    OR EXISTS (
+      SELECT 1 FROM ai_service_tags ast
+      JOIN tags t ON ast.tag_id = t.id
+      WHERE ast.ai_service_id = s.id AND t.slug = ANY($2::text[])
+    )
+  )`;
+
+  const kwPart = kwConditions.length > 0 ? `(${kwConditions.join(' OR ')})` : null;
+
+  if (hasScope && kwPart) {
+    // Scope defines the pool; keywords narrow it (AND)
+    return `s.is_active = true AND ${scopePart} AND ${kwPart}`;
+  } else if (hasScope) {
+    return `s.is_active = true AND ${scopePart}`;
+  } else if (kwPart) {
+    return `s.is_active = true AND ${kwPart}`;
+  }
+  return `s.is_active = true`;
+}
+
+async function getCount(categories: string[], tags: string[], kw: string[], params: (string[] | string)[]) {
+  const where = buildWhere(categories, tags, kw);
   const { rows } = await pool.query(`
     SELECT COUNT(DISTINCT s.id) as total
     FROM ai_services s
     LEFT JOIN categories c ON s.category_id = c.id
-    WHERE s.is_active = true AND (
-      c.slug = ANY($1::text[])
-      OR EXISTS (
-        SELECT 1 FROM ai_service_tags ast
-        JOIN tags t ON ast.tag_id = t.id
-        WHERE ast.ai_service_id = s.id AND t.slug = ANY($2::text[])
-      )
-      ${kwWhere}
-    )
+    WHERE ${where}
   `, params);
   return parseInt(rows[0].total);
 }
 
 async function getResults(categories: string[], tags: string[], kw: string[], params: (string[] | string)[]) {
+  const where = buildWhere(categories, tags, kw);
   const kwConditions = kw.map((_, i) =>
     `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`
   );
   const kwScore = kwConditions.length > 0
     ? `CASE WHEN ${kwConditions.join(' OR ')} THEN 5 ELSE 0 END`
     : '0';
-  const kwWhere = kwConditions.length > 0 ? `OR (${kwConditions.join(' OR ')})` : '';
 
   const { rows } = await pool.query(`
     SELECT DISTINCT
@@ -139,15 +155,7 @@ async function getResults(categories: string[], tags: string[], kw: string[], pa
       ) as score
     FROM ai_services s
     LEFT JOIN categories c ON s.category_id = c.id
-    WHERE s.is_active = true AND (
-      c.slug = ANY($1::text[])
-      OR EXISTS (
-        SELECT 1 FROM ai_service_tags ast
-        JOIN tags t ON ast.tag_id = t.id
-        WHERE ast.ai_service_id = s.id AND t.slug = ANY($2::text[])
-      )
-      ${kwWhere}
-    )
+    WHERE ${where}
     ORDER BY score DESC, s.is_featured DESC
     LIMIT 100
   `, params);
