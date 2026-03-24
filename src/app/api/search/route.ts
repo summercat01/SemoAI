@@ -18,32 +18,42 @@ async function analyzeIntent(query: string, categories: string[], tags: string[]
 가능한 태그: ${TAGS.join(', ')}
 
 rules:
+- categories는 가장 관련있는 1개만 선택 (절대 2개 이상 선택 금지 — 너무 많은 결과가 나옴)
+- 단, 명확히 두 분야가 겹칠 때만 최대 2개 (예: "코딩으로 게임 만들기" → coding + game-dev)
 - "무료" → tags에 "free"
 - "학생/초보" → tags에 "beginner"
-- "코딩/개발" → categories에 "coding", tags에 "developer"
-- keywords는 서비스 이름에 있을 영어 단어 (video, image, chat, code, music, game, write 등)
+- "코딩/개발" → categories에 "coding"
+- "노래/음악/작곡" → categories에 "music", keywords에 "music" 또는 "song"
+- "영상/유튜브/쇼츠" → categories에 "video"
+- "그림/이미지/사진" → categories에 "image-generation"
+- keywords는 서비스 이름/설명에 있을 영어 단어 최대 1개 (너무 넓으면 생략)
 
 JSON:
 {
-  "categories": ["카테고리들"],
+  "categories": ["가장 관련있는 카테고리 1개"],
   "tags": ["태그들"],
-  "keywords": ["영어 키워드 0-2개"],
+  "keywords": ["영어 키워드 0-1개"],
   "summary": "한 줄 요약 (한국어)"
 }`
-    : `사용자가 AI 서비스를 찾고 있습니다. 추가 조건을 분석해서 JSON으로만 응답하세요.
+    : `사용자가 AI 서비스를 찾고 있습니다. 사용자의 추가 답변으로 검색을 좁혀주세요.
 
-원래 요청: "${query}"
+사용자 추가 답변: "${query}"
 현재 카테고리: ${JSON.stringify(categories)}
 현재 태그: ${JSON.stringify(tags)}
 
 가능한 카테고리: ${CATEGORIES.join(', ')}
 가능한 태그: ${TAGS.join(', ')}
 
+rules:
+- 현재 결과를 좁히는 조건만 추가 (기존 카테고리는 건드리지 말 것)
+- keywords는 사용자 답변에서 뽑은 영어 단어 1개 (예: "유니티" → "unity", "무료" → tags free 추가)
+- 카테고리 추가는 꼭 필요한 경우만
+
 기존에 추가할 항목만 JSON으로:
 {
   "add_categories": [],
   "add_tags": [],
-  "add_keywords": [],
+  "add_keywords": ["좁히기용 키워드 0-1개"],
   "summary": "한 줄 요약 (한국어)"
 }`;
 
