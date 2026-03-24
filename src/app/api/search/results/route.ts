@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-function buildWhere(categories: string[], tags: string[], kw: string[]): string {
+function buildWhere(categories: string[], tags: string[], kw: string[], refinement = false): string {
   const hasScope = categories.length > 0 || tags.length > 0;
   const kwConditions = kw.map((_, i) =>
     `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`
@@ -20,7 +20,8 @@ function buildWhere(categories: string[], tags: string[], kw: string[]): string 
 
   const kwPart = kwConditions.length > 0 ? `(${kwConditions.join(' OR ')})` : null;
 
-  if (hasScope && kwPart) return `s.is_active = true AND ${scopePart} AND ${kwPart}`;
+  if (refinement && hasScope && kwPart) return `s.is_active = true AND ${scopePart} AND ${kwPart}`;
+  if (hasScope && kwPart) return `s.is_active = true AND (${scopePart} OR ${kwPart})`;
   if (hasScope) return `s.is_active = true AND ${scopePart}`;
   if (kwPart) return `s.is_active = true AND ${kwPart}`;
   return `s.is_active = true`;
@@ -28,7 +29,7 @@ function buildWhere(categories: string[], tags: string[], kw: string[]): string 
 
 export async function POST(req: NextRequest) {
   try {
-    const { categories = [], tags = [], keywords = [], page = 1, pageSize = 24 } = await req.json();
+    const { categories = [], tags = [], keywords = [], page = 1, pageSize = 24, refinement = false } = await req.json();
 
     const kw = (keywords as string[]).filter(Boolean);
     const offset = (page - 1) * pageSize;
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const offsetIdx = params.length + 2;
     params.push(pageSize, offset);
 
-    const where = buildWhere(categories, tags, kw);
+    const where = buildWhere(categories, tags, kw, refinement as boolean);
 
     const kwConditions = kw.map((_, i) =>
       `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`

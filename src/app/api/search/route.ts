@@ -99,7 +99,8 @@ async function generateNextQuestion(
   return block.type === 'text' ? block.text.trim().replace(/^["']|["']$/g, '') : null;
 }
 
-function buildWhere(categories: string[], tags: string[], kw: string[]): string {
+// refinement=true → keywords AND scope (narrows). refinement=false → everything OR (broad initial search).
+function buildWhere(categories: string[], tags: string[], kw: string[], refinement = false): string {
   const hasScope = categories.length > 0 || tags.length > 0;
   const kwConditions = kw.map((_, i) =>
     `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`
@@ -116,9 +117,12 @@ function buildWhere(categories: string[], tags: string[], kw: string[]): string 
 
   const kwPart = kwConditions.length > 0 ? `(${kwConditions.join(' OR ')})` : null;
 
-  if (hasScope && kwPart) {
-    // Scope defines the pool; keywords narrow it (AND)
+  if (refinement && hasScope && kwPart) {
+    // Follow-up: scope defines pool, keywords narrow it
     return `s.is_active = true AND ${scopePart} AND ${kwPart}`;
+  } else if (hasScope && kwPart) {
+    // Initial search: broad OR across scope + keywords
+    return `s.is_active = true AND (${scopePart} OR ${kwPart})`;
   } else if (hasScope) {
     return `s.is_active = true AND ${scopePart}`;
   } else if (kwPart) {
@@ -127,8 +131,8 @@ function buildWhere(categories: string[], tags: string[], kw: string[]): string 
   return `s.is_active = true`;
 }
 
-async function getCount(categories: string[], tags: string[], kw: string[], params: (string[] | string)[]) {
-  const where = buildWhere(categories, tags, kw);
+async function getCount(categories: string[], tags: string[], kw: string[], params: (string[] | string)[], refinement = false) {
+  const where = buildWhere(categories, tags, kw, refinement);
   const { rows } = await pool.query(`
     SELECT COUNT(DISTINCT s.id) as total
     FROM ai_services s
@@ -138,8 +142,8 @@ async function getCount(categories: string[], tags: string[], kw: string[], para
   return parseInt(rows[0].total);
 }
 
-async function getResults(categories: string[], tags: string[], kw: string[], params: (string[] | string)[]) {
-  const where = buildWhere(categories, tags, kw);
+async function getResults(categories: string[], tags: string[], kw: string[], params: (string[] | string)[], refinement = false) {
+  const where = buildWhere(categories, tags, kw, refinement);
   const kwConditions = kw.map((_, i) =>
     `(LOWER(s.name) LIKE $${i + 3} OR LOWER(s.tagline) LIKE $${i + 3})`
   );
@@ -216,7 +220,8 @@ export async function POST(req: NextRequest) {
     const params: (string[] | string)[] = [mergedCategories, mergedTags];
     kw.forEach(k => params.push(`%${k.toLowerCase()}%`));
 
-    const total = await getCount(mergedCategories, mergedTags, kw, params);
+    const refinement = !isFirstTurn;
+    const total = await getCount(mergedCategories, mergedTags, kw, params, refinement);
 
     // Generate follow-up question
     let nextQuestion: string | null = null;

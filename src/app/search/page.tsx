@@ -122,7 +122,7 @@ function ResultCard({ s }: { s: ServiceResult }) {
 
 const PAGE_SIZE = 24;
 
-function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: number; onClose: () => void }) {
+function ResultsPanel({ filters, total, onClose, refinement = false }: { filters: Filters; total: number; onClose: () => void; refinement?: boolean }) {
   const [results, setResults] = useState<ServiceResult[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -134,7 +134,7 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
       const res = await fetch('/api/search/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...filters, page: p, pageSize: PAGE_SIZE }),
+        body: JSON.stringify({ ...filters, page: p, pageSize: PAGE_SIZE, refinement }),
       });
       const data = await res.json();
       setResults(data.results || []);
@@ -495,7 +495,7 @@ function SearchContent() {
             {/* Results panel — inside scrollable area */}
             {showResults && result && (
               <div style={{ marginBottom: 8 }}>
-                <ResultsPanel filters={result.filters} total={result.total} onClose={() => setShowResults(false)} />
+                <ResultsPanel filters={result.filters} total={result.total} onClose={() => setShowResults(false)} refinement={round > 0} />
               </div>
             )}
 
