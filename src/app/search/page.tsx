@@ -23,26 +23,29 @@ interface Filters {
   keywords: string[];
 }
 
-interface UserMsg {
-  type: 'user';
-  content: string;
-}
+// Chat messages: user queries + AI follow-up questions only (not the count result)
+interface UserMsg { type: 'user'; content: string; }
+interface AiQuestionMsg { type: 'ai_question'; content: string; }
+type ChatMsg = UserMsg | AiQuestionMsg;
 
-interface AiMsg {
-  type: 'ai';
+interface SearchResult {
   total: number;
   summary: string;
-  nextQuestion: string | null;
   filters: Filters;
   loading?: boolean;
 }
-
-type Message = UserMsg | AiMsg;
 
 interface Conversation {
   id: string;
   title: string;
   createdAt: number;
+}
+
+interface ConvData {
+  chatMessages: ChatMsg[];
+  result: SearchResult | null;
+  filters: Filters;
+  round: number;
 }
 
 function genId() {
@@ -53,7 +56,7 @@ function getDomain(url: string) {
   try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
 }
 
-function ServiceLogo({ url, name, size = 36 }: { url: string; name: string; size?: number }) {
+function ServiceLogo({ url, name, size = 32 }: { url: string; name: string; size?: number }) {
   const domain = getDomain(url);
   const [src, setSrc] = useState(0);
   const sources = domain ? [
@@ -153,12 +156,7 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
   };
 
   return (
-    <div style={{
-      marginTop: 12,
-      background: 'rgba(0,0,0,0.3)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 16, padding: '16px',
-    }}>
+    <div>
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <div style={{
@@ -166,6 +164,7 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
             border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7',
             animation: 'spin 0.8s linear infinite',
           }} />
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       ) : (
         <>
@@ -191,7 +190,7 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
           )}
         </>
       )}
-      <div style={{ textAlign: 'center', marginTop: 12 }}>
+      <div style={{ textAlign: 'center', marginTop: 14 }}>
         <button onClick={onClose}
           style={{ padding: '7px 20px', borderRadius: 20, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
@@ -203,108 +202,22 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
   );
 }
 
-function AiBubble({ msg, showResults, onToggleResults }: {
-  msg: AiMsg;
-  showResults: boolean;
-  onToggleResults: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 780 }}>
-      {/* Avatar */}
-      <div style={{
-        width: 34, height: 34, borderRadius: 9, flexShrink: 0, marginTop: 2,
-        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 15, fontWeight: 800, color: '#fff',
-      }}>△</div>
-
-      <div style={{ flex: 1 }}>
-        {msg.loading ? (
-          <div style={{
-            display: 'inline-flex', gap: 5, alignItems: 'center',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-            borderRadius: 14, padding: '12px 18px',
-          }}>
-            {[0, 1, 2].map(i => (
-              <div key={i} style={{
-                width: 7, height: 7, borderRadius: '50%', background: '#7c6af7',
-                animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
-              }} />
-            ))}
-            <style>{`@keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} } @keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          </div>
-        ) : (
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
-            borderRadius: 16, overflow: 'hidden',
-          }}>
-            {/* Count + 자세히보기 — centered, prominent */}
-            <div style={{ textAlign: 'center', padding: '24px 24px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                <span style={{
-                  fontSize: 56, fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
-                  background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                }}>{msg.total.toLocaleString()}</span>
-                <span style={{ fontSize: 22, fontWeight: 700 }}>개 서비스 발견</span>
-              </div>
-              {msg.summary && (
-                <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 16px' }}>{msg.summary}</p>
-              )}
-              {msg.total > 0 && (
-                <button
-                  onClick={onToggleResults}
-                  style={{
-                    padding: '10px 28px', borderRadius: 20,
-                    border: `1px solid ${showResults ? 'rgba(124,106,247,0.5)' : 'rgba(124,106,247,0.35)'}`,
-                    background: showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)',
-                    color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'inherit', transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.2)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)'; }}
-                >
-                  {showResults ? '접기 ↑' : `자세히 보기 (${msg.total.toLocaleString()}개 전체)`}
-                </button>
-              )}
-            </div>
-
-            {/* Results panel */}
-            {showResults && (
-              <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px' }}>
-                <ResultsPanel filters={msg.filters} total={msg.total} onClose={onToggleResults} />
-              </div>
-            )}
-
-            {/* Follow-up question */}
-            {msg.nextQuestion && (
-              <div style={{
-                borderTop: '1px solid var(--border)',
-                padding: '14px 20px',
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'rgba(124,106,247,0.05)',
-              }}>
-                <span style={{ fontSize: 15 }}>💬</span>
-                <span style={{ fontSize: 14, color: '#c4b5fd', fontWeight: 500 }}>{msg.nextQuestion}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SearchContent() {
   const searchParams = useSearchParams();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  // Results displayed at TOP (above chat)
+  const [result, setResult] = useState<SearchResult | null>(null);
+  const [showResults, setShowResults] = useState(false);
+
+  // Chat messages: user queries + AI follow-up questions only
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [filters, setFilters] = useState<Filters>({ categories: [], tags: [], keywords: [] });
   const [round, setRound] = useState(0);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -319,10 +232,10 @@ function SearchContent() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [chatMessages, result]);
 
-  const persistMessages = useCallback((id: string, msgs: Message[], title: string) => {
-    localStorage.setItem(`semo_conv_${id}`, JSON.stringify(msgs));
+  const persistConv = useCallback((id: string, data: ConvData, title: string) => {
+    localStorage.setItem(`semo_conv_${id}`, JSON.stringify(data));
     setConversations(prev => {
       const exists = prev.find(c => c.id === id);
       const updated = exists ? prev : [{ id, title: title.slice(0, 40), createdAt: Date.now() }, ...prev];
@@ -331,17 +244,19 @@ function SearchContent() {
     });
   }, []);
 
-  const sendMessage = useCallback(async (
+  const doSearch = useCallback(async (
     query: string,
     convId: string,
     currentFilters: Filters,
     currentRound: number,
-    prevMessages: Message[],
+    prevChatMessages: ChatMsg[],
   ) => {
     const userMsg: UserMsg = { type: 'user', content: query };
-    const loadingMsg: AiMsg = { type: 'ai', total: 0, summary: '', nextQuestion: null, filters: currentFilters, loading: true };
-    const optimistic = [...prevMessages, userMsg, loadingMsg];
-    setMessages(optimistic);
+    const newChat = [...prevChatMessages, userMsg];
+    setChatMessages(newChat);
+    setSearching(true);
+    setResult(prev => prev ? { ...prev, loading: true } : { total: 0, summary: '', filters: currentFilters, loading: true });
+    setShowResults(false);
 
     try {
       const res = await fetch('/api/search', {
@@ -357,22 +272,25 @@ function SearchContent() {
       });
       const data = await res.json();
       const newFilters: Filters = data.filters || currentFilters;
-      const aiMsg: AiMsg = {
-        type: 'ai',
-        total: data.total || 0,
-        summary: data.summary || '',
-        nextQuestion: data.nextQuestion || null,
-        filters: newFilters,
-      };
-      const finalMsgs = [...prevMessages, userMsg, aiMsg];
-      setMessages(finalMsgs);
+      const newResult: SearchResult = { total: data.total || 0, summary: data.summary || '', filters: newFilters };
+
+      setResult(newResult);
       setFilters(newFilters);
-      const title = (prevMessages[0] as UserMsg)?.content || query;
-      persistMessages(convId, finalMsgs, title);
+
+      // Add follow-up question to chat if present
+      const finalChat: ChatMsg[] = data.nextQuestion
+        ? [...newChat, { type: 'ai_question', content: data.nextQuestion }]
+        : newChat;
+      setChatMessages(finalChat);
+
+      const title = (prevChatMessages[0] as UserMsg)?.content || query;
+      persistConv(convId, { chatMessages: finalChat, result: newResult, filters: newFilters, round: currentRound }, title);
     } catch {
-      setMessages(prev => prev.filter(m => !('loading' in m)));
+      setResult(prev => prev ? { ...prev, loading: false } : null);
+    } finally {
+      setSearching(false);
     }
-  }, [persistMessages]);
+  }, [persistConv]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -381,32 +299,31 @@ function SearchContent() {
     if (q) {
       const id = genId();
       setCurrentId(id);
-      sendMessage(q, id, { categories: [], tags: [], keywords: [] }, 0, []);
+      doSearch(q, id, { categories: [], tags: [], keywords: [] }, 0, []);
     }
-  }, [searchParams, sendMessage]);
+  }, [searchParams, doSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const q = input.trim();
     if (!q) return;
     setInput('');
-    setExpandedIdx(null);
 
-    // Find last AI message to check for follow-up context
-    const lastAi = [...messages].reverse().find(m => m.type === 'ai') as AiMsg | undefined;
-    const isFollowUp = messages.length > 0 && lastAi && !lastAi.loading && currentId;
+    const isFollowUp = chatMessages.length > 0 && currentId;
 
     if (isFollowUp && currentId) {
       const newRound = round + 1;
       setRound(newRound);
-      sendMessage(q, currentId, filters, newRound, messages);
+      doSearch(q, currentId, filters, newRound, chatMessages);
     } else {
       const id = genId();
       setCurrentId(id);
-      setMessages([]);
+      setChatMessages([]);
+      setResult(null);
       setFilters({ categories: [], tags: [], keywords: [] });
       setRound(0);
-      sendMessage(q, id, { categories: [], tags: [], keywords: [] }, 0, []);
+      setShowResults(false);
+      doSearch(q, id, { categories: [], tags: [], keywords: [] }, 0, []);
     }
   };
 
@@ -419,26 +336,25 @@ function SearchContent() {
 
   const loadConversation = (id: string) => {
     try {
-      const msgs: Message[] = JSON.parse(localStorage.getItem(`semo_conv_${id}`) || '[]');
-      setMessages(msgs);
+      const data: ConvData = JSON.parse(localStorage.getItem(`semo_conv_${id}`) || 'null');
+      if (!data) return;
+      setChatMessages(data.chatMessages || []);
+      setResult(data.result || null);
+      setFilters(data.filters || { categories: [], tags: [], keywords: [] });
+      setRound(data.round || 0);
       setCurrentId(id);
-      setExpandedIdx(null);
-      const lastAi = [...msgs].reverse().find(m => m.type === 'ai') as AiMsg | undefined;
-      if (lastAi) {
-        setFilters(lastAi.filters);
-        const userCount = msgs.filter(m => m.type === 'user').length;
-        setRound(Math.max(0, userCount - 1));
-      }
+      setShowResults(false);
     } catch {}
   };
 
   const startNew = () => {
     setCurrentId(null);
-    setMessages([]);
+    setChatMessages([]);
+    setResult(null);
     setFilters({ categories: [], tags: [], keywords: [] });
     setRound(0);
-    setExpandedIdx(null);
-    inputRef.current?.focus();
+    setShowResults(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const deleteConversation = (id: string, e: React.MouseEvent) => {
@@ -452,10 +368,8 @@ function SearchContent() {
     if (currentId === id) startNew();
   };
 
-  const pendingQuestion = (() => {
-    const lastAi = [...messages].reverse().find(m => m.type === 'ai') as AiMsg | undefined;
-    return lastAi?.nextQuestion ?? null;
-  })();
+  const lastMsg = chatMessages[chatMessages.length - 1];
+  const pendingQuestion = lastMsg?.type === 'ai_question' ? lastMsg.content : null;
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden' }}>
@@ -465,7 +379,6 @@ function SearchContent() {
         width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column',
         background: 'rgba(255,255,255,0.025)', borderRight: '1px solid var(--border)',
       }}>
-        {/* Logo */}
         <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--border)' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', color: 'inherit' }}>
             <div style={{
@@ -481,76 +394,110 @@ function SearchContent() {
           </a>
         </div>
 
-        {/* New chat button */}
         <div style={{ padding: '12px 12px 8px' }}>
-          <button
-            onClick={startNew}
-            style={{
-              width: '100%', padding: '9px 14px', borderRadius: 10,
-              border: '1px solid rgba(124,106,247,0.35)',
-              background: 'rgba(124,106,247,0.08)',
-              color: '#c4b5fd', fontSize: 14, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.15)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.08)'; }}
-          >
+          <button onClick={startNew} style={{
+            width: '100%', padding: '9px 14px', borderRadius: 10,
+            border: '1px solid rgba(124,106,247,0.35)', background: 'rgba(124,106,247,0.08)',
+            color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.08)'; }}>
             <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 새 대화
           </button>
         </div>
 
-        {/* Conversation list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
           {conversations.length === 0 ? (
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '20px 8px' }}>
-              대화 기록이 없어요
-            </p>
-          ) : (
-            conversations.map(conv => (
-              <div
-                key={conv.id}
-                onClick={() => loadConversation(conv.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '9px 10px', borderRadius: 9, cursor: 'pointer',
-                  background: currentId === conv.id ? 'rgba(124,106,247,0.12)' : 'transparent',
-                  border: `1px solid ${currentId === conv.id ? 'rgba(124,106,247,0.3)' : 'transparent'}`,
-                  marginBottom: 2, transition: 'all 0.15s',
-                }}
-                onMouseEnter={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                onMouseLeave={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'transparent'; }}
-              >
-                <span style={{ fontSize: 14, flexShrink: 0 }}>💬</span>
-                <span style={{
-                  flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  color: currentId === conv.id ? 'var(--text)' : 'var(--text-muted)',
-                }}>{conv.title}</span>
-                <button
-                  onClick={(e) => deleteConversation(conv.id, e)}
-                  style={{
-                    flexShrink: 0, width: 20, height: 20, borderRadius: 4,
-                    border: 'none', background: 'transparent', color: 'var(--text-muted)',
-                    cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'opacity 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}
-                >×</button>
-              </div>
-            ))
-          )}
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '20px 8px' }}>대화 기록이 없어요</p>
+          ) : conversations.map(conv => (
+            <div key={conv.id} onClick={() => loadConversation(conv.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '9px 10px', borderRadius: 9, cursor: 'pointer', marginBottom: 2,
+              background: currentId === conv.id ? 'rgba(124,106,247,0.12)' : 'transparent',
+              border: `1px solid ${currentId === conv.id ? 'rgba(124,106,247,0.3)' : 'transparent'}`,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'transparent'; }}>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>💬</span>
+              <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'var(--text)' : 'var(--text-muted)' }}>{conv.title}</span>
+              <button onClick={(e) => deleteConversation(conv.id, e)} style={{
+                flexShrink: 0, width: 20, height: 20, borderRadius: 4,
+                border: 'none', background: 'transparent', color: 'var(--text-muted)',
+                cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: 0, transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>×</button>
+            </div>
+          ))}
         </div>
       </aside>
 
-      {/* Main chat area */}
+      {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
-          <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* ── TOP: Results display ── */}
+        {(result || searching) && (
+          <div style={{
+            borderBottom: '1px solid var(--border)',
+            background: 'rgba(7,7,15,0.6)', backdropFilter: 'blur(12px)',
+            flexShrink: 0,
+          }}>
+            <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 24px 20px', textAlign: 'center' }}>
+              {result?.loading || searching && !result ? (
+                <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                  <span style={{ fontSize: 15, color: 'var(--text-muted)' }}>AI가 분석 중...</span>
+                  <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
+                </div>
+              ) : result && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 56, fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
+                      background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
+                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    }}>{result.total.toLocaleString()}</span>
+                    <span style={{ fontSize: 22, fontWeight: 700 }}>개 서비스 발견</span>
+                  </div>
+                  {result.summary && (
+                    <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 14px' }}>{result.summary}</p>
+                  )}
+                  {result.total > 0 && (
+                    <button onClick={() => setShowResults(v => !v)} style={{
+                      padding: '10px 28px', borderRadius: 20,
+                      border: `1px solid ${showResults ? 'rgba(124,106,247,0.5)' : 'rgba(124,106,247,0.35)'}`,
+                      background: showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)',
+                      color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'inherit', transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.2)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)'; }}>
+                      {showResults ? '접기 ↑' : `자세히 보기 (${result.total.toLocaleString()}개 전체)`}
+                    </button>
+                  )}
+                  {showResults && (
+                    <div style={{ marginTop: 20, textAlign: 'left' }}>
+                      <ResultsPanel filters={result.filters} total={result.total} onClose={() => setShowResults(false)} />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
-            {messages.length === 0 && (
+        {/* ── BOTTOM: Chat conversation ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 16px' }}>
+          <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {chatMessages.length === 0 && !result && (
               <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: 14, margin: '0 auto 16px',
@@ -558,16 +505,14 @@ function SearchContent() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 28, fontWeight: 800, color: '#fff',
                 }}>△</div>
-                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                  당신이 원하는 AI는 무엇인가요?
-                </p>
+                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>당신이 원하는 AI는 무엇인가요?</p>
                 <p style={{ fontSize: 15 }}>원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.</p>
               </div>
             )}
 
-            {messages.map((msg, idx) =>
+            {chatMessages.map((msg, idx) =>
               msg.type === 'user' ? (
-                /* User bubble */
+                /* User bubble — right */
                 <div key={idx} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <div style={{
                     maxWidth: '70%', padding: '12px 18px',
@@ -575,52 +520,55 @@ function SearchContent() {
                     background: 'linear-gradient(135deg, rgba(124,106,247,0.35), rgba(79,195,247,0.25))',
                     border: '1px solid rgba(124,106,247,0.3)',
                     fontSize: 15, lineHeight: 1.6,
-                  }}>
-                    {msg.content}
-                  </div>
+                  }}>{msg.content}</div>
                 </div>
               ) : (
-                /* AI bubble */
-                <AiBubble
-                  key={idx}
-                  msg={msg}
-                  showResults={expandedIdx === idx}
-                  onToggleResults={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
-                />
+                /* AI follow-up question — left */
+                <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0, marginTop: 2,
+                    background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 800, color: '#fff',
+                  }}>△</div>
+                  <div style={{
+                    padding: '12px 16px', borderRadius: '4px 18px 18px 18px',
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                    fontSize: 15, lineHeight: 1.6, color: '#e2d9f3',
+                  }}>{msg.content}</div>
+                </div>
               )
             )}
+
             <div ref={messagesEndRef} />
           </div>
         </div>
 
-        {/* Input area */}
+        {/* ── Input ── */}
         <div style={{
           borderTop: '1px solid var(--border)',
-          padding: '16px 24px 20px',
-          background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)',
+          padding: '14px 24px 18px',
+          background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)', flexShrink: 0,
         }}>
           <div style={{ maxWidth: 800, margin: '0 auto' }}>
             {pendingQuestion && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 7,
-                marginBottom: 10, padding: '8px 14px', borderRadius: 10,
+                marginBottom: 8, padding: '7px 14px', borderRadius: 10,
                 background: 'rgba(124,106,247,0.07)', border: '1px solid rgba(124,106,247,0.18)',
               }}>
-                <span style={{ fontSize: 13 }}>💬</span>
+                <span style={{ fontSize: 12 }}>💬</span>
                 <span style={{ fontSize: 13, color: '#c4b5fd' }}>{pendingQuestion}</span>
               </div>
             )}
             <form onSubmit={handleSubmit}>
               <div style={{
                 display: 'flex', gap: 10, alignItems: 'flex-end',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid var(--border)', borderRadius: 14,
-                padding: '10px 10px 10px 16px',
-                transition: 'border-color 0.2s',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                borderRadius: 14, padding: '10px 10px 10px 16px', transition: 'border-color 0.2s',
               }}
               onFocusCapture={e => e.currentTarget.style.borderColor = 'rgba(124,106,247,0.6)'}
-              onBlurCapture={e => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
+              onBlurCapture={e => e.currentTarget.style.borderColor = 'var(--border)'}>
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -639,19 +587,18 @@ function SearchContent() {
                     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
                   }}
                 />
-                <button type="submit" disabled={!input.trim()} style={{
+                <button type="submit" disabled={!input.trim() || searching} style={{
                   width: 36, height: 36, borderRadius: 9, border: 'none', flexShrink: 0,
-                  cursor: input.trim() ? 'pointer' : 'default',
-                  background: input.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background 0.2s',
+                  cursor: input.trim() && !searching ? 'pointer' : 'default',
+                  background: input.trim() && !searching ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s',
                 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
                 </button>
               </div>
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>
                 Enter로 전송 · Shift+Enter 줄바꿈
               </p>
             </form>
