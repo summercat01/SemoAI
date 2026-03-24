@@ -158,7 +158,7 @@ export default function Home() {
           }}>△</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</span>
-            <span style={{ fontSize: 15, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>세상의 모든 AI</span>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>세상의 모든 AI</span>
           </div>
         </div>
         <nav style={{ display: 'flex', gap: 40 }}>
