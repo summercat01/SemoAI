@@ -156,7 +156,10 @@ export default function Home() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 20, fontWeight: 800, color: '#fff',
           }}>△</div>
-          <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px' }}>세모 AI</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>세상의 모든 AI</span>
+          </div>
         </div>
         <nav style={{ display: 'flex', gap: 40 }}>
           {['탐색', '카테고리', '마이페이지'].map(item => (
