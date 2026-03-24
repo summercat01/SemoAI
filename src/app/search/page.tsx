@@ -333,17 +333,17 @@ function SearchContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
             {/* Count + summary */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <span style={{
-                  fontSize: 42, fontWeight: 900, letterSpacing: '-1px',
+                  fontSize: 64, fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
                   background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 }}>{total.toLocaleString()}</span>
-                <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>개 서비스 발견</span>
+                <span style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>개 서비스 발견</span>
               </div>
               {summary && (
-                <p style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>{summary}</p>
+                <p style={{ marginTop: 8, fontSize: 15, color: 'var(--text-muted)' }}>{summary}</p>
               )}
             </div>
 
@@ -453,6 +453,24 @@ function SearchContent() {
                         </button>
                       </div>
                     )}
+
+                    {/* 접기 버튼 */}
+                    <div style={{ textAlign: 'center', paddingTop: 8 }}>
+                      <button
+                        onClick={() => { setShowResults(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        style={{
+                          padding: '8px 24px', borderRadius: 20,
+                          border: '1px solid var(--border)',
+                          background: 'rgba(255,255,255,0.04)',
+                          color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer',
+                          fontFamily: 'inherit', transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                      >
+                        접기 ↑
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
