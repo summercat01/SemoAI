@@ -92,28 +92,28 @@ function ResultCard({ s }: { s: ServiceResult }) {
   return (
     <a href={s.website_url} target="_blank" rel="noopener noreferrer"
       style={{
-        display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px',
-        borderRadius: 12, background: 'rgba(255,255,255,0.04)',
+        display: 'flex', flexDirection: 'column', gap: 12, padding: '18px 18px',
+        borderRadius: 14, background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
         textDecoration: 'none', color: 'inherit', transition: 'all 0.2s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,106,247,0.4)'; e.currentTarget.style.background = 'rgba(124,106,247,0.05)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,106,247,0.4)'; e.currentTarget.style.background = 'rgba(124,106,247,0.05)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <ServiceLogo url={s.website_url} name={s.name} size={32} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <ServiceLogo url={s.website_url} name={s.name} size={42} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{s.category_name}</div>
+          <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.category_name}</div>
         </div>
         <span style={{
-          fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
+          fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20,
           border: `1px solid ${badge.color}55`, color: badge.color, background: `${badge.color}18`,
           whiteSpace: 'nowrap', flexShrink: 0,
         }}>{badge.label}</span>
       </div>
       <p style={{
-        fontSize: 12, color: 'rgba(240,240,255,0.6)', lineHeight: 1.5, margin: 0,
+        fontSize: 13, color: 'rgba(240,240,255,0.65)', lineHeight: 1.6, margin: 0,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
       }}>{s.tagline}</p>
     </a>
@@ -168,7 +168,7 @@ function ResultsPanel({ filters, total, onClose }: { filters: Filters; total: nu
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
             {results.map(s => <ResultCard key={s.id} s={s} />)}
           </div>
           {totalPages > 1 && (
@@ -445,7 +445,7 @@ function SearchContent() {
             background: 'rgba(7,7,15,0.6)', backdropFilter: 'blur(12px)',
             flexShrink: 0,
           }}>
-            <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 24px 20px', textAlign: 'center' }}>
+            <div style={{ maxWidth: 960, margin: '0 auto', padding: '20px 24px 16px', textAlign: 'center' }}>
               {result?.loading || searching && !result ? (
                 <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <div style={{
@@ -482,22 +482,24 @@ function SearchContent() {
                       {showResults ? '접기 ↑' : `자세히 보기 (${result.total.toLocaleString()}개 전체)`}
                     </button>
                   )}
-                  {showResults && (
-                    <div style={{ marginTop: 20, textAlign: 'left' }}>
-                      <ResultsPanel filters={result.filters} total={result.total} onClose={() => setShowResults(false)} />
-                    </div>
-                  )}
                 </>
               )}
             </div>
           </div>
         )}
 
-        {/* ── BOTTOM: Chat conversation ── */}
+        {/* ── BOTTOM: Chat + Results (scrollable) ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 16px' }}>
-          <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {chatMessages.length === 0 && !result && (
+            {/* Results panel — inside scrollable area */}
+            {showResults && result && (
+              <div style={{ marginBottom: 8 }}>
+                <ResultsPanel filters={result.filters} total={result.total} onClose={() => setShowResults(false)} />
+              </div>
+            )}
+
+            {chatMessages.length === 0 && !result && !showResults && (
               <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: 14, margin: '0 auto 16px',
@@ -550,7 +552,7 @@ function SearchContent() {
           padding: '14px 24px 18px',
           background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)', flexShrink: 0,
         }}>
-          <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div style={{ maxWidth: 960, margin: '0 auto' }}>
             {pendingQuestion && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 7,
