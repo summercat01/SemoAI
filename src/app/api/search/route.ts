@@ -138,6 +138,7 @@ async function queryServices(categories: string[], tags: string[], keywords: str
       s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url,
       s.skill_level, s.target_user, s.key_features,
       c.name as category_name, c.slug as category_slug,
+      s.is_featured,
       (
         CASE WHEN c.slug = ANY($1::text[]) THEN 20 ELSE 0 END +
         CASE WHEN EXISTS (
