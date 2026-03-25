@@ -164,7 +164,7 @@ export default function Home() {
           </div>
         </div>
         <nav style={{ display: 'flex', gap: 40 }}>
-          {[{ label: '탐색', href: '/browse' }, { label: '카테고리', href: '/browse' }, { label: '마이페이지', href: '#' }].map(item => (
+          {[{ label: '추천', href: '/search' }, { label: '탐색', href: '/browse' }, { label: '로그인', href: '#' }].map(item => (
             <a key={item.label} href={item.href} style={{
               fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s',
             }}
