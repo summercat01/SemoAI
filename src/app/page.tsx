@@ -70,13 +70,15 @@ export default function Home() {
   const [exampleIdx, setExampleIdx] = useState(0);
   const [cardWidth, setCardWidth] = useState(480);
 
-  const SIDE_GAP = cardWidth < 400 ? 12 : 24;
+  const SIDE_GAP = cardWidth < 280 ? 10 : cardWidth < 400 ? 14 : 24;
   const CARD_WIDTH = cardWidth;
+  const sm = cardWidth < 260; // small card layout
 
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      setCardWidth(w < 480 ? Math.max(w - 56, 240) : w < 768 ? 380 : 480);
+      // Mobile: show ~3 cards (active centered, 2 partially visible)
+      setCardWidth(w < 480 ? Math.round(w * 0.54) : w < 768 ? 360 : 480);
     };
     update();
     window.addEventListener('resize', update);
@@ -258,8 +260,10 @@ export default function Home() {
                     flexShrink: 0,
                     width: CARD_WIDTH,
                     aspectRatio: '3 / 2',
-                    borderRadius: 24,
-                    padding: isActive ? '24px 28px' : '18px 22px',
+                    borderRadius: sm ? 16 : 24,
+                    padding: isActive
+                      ? (sm ? '10px 14px' : '24px 28px')
+                      : (sm ? '8px 12px'  : '18px 22px'),
                     background: isActive
                       ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
                       : 'rgba(255,255,255,0.04)',
@@ -278,7 +282,7 @@ export default function Home() {
                   {/* Top: name centered */}
                   <div style={{ textAlign: 'center' }}>
                     <span style={{
-                      fontWeight: 800, fontSize: isActive ? 28 : 18,
+                      fontWeight: 800, fontSize: isActive ? (sm ? 15 : 28) : (sm ? 11 : 18),
                       letterSpacing: '-0.4px', transition: 'font-size 0.4s',
                     }}>{s.name}</span>
                   </div>
@@ -286,12 +290,12 @@ export default function Home() {
                   <div style={{
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 130 : 80} />
+                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? (sm ? 56 : 130) : (sm ? 36 : 80)} />
                   </div>
                   {/* Bottom: tagline left + badge right */}
                   <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
                     <p style={{
-                      fontSize: isActive ? 15 : 12,
+                      fontSize: isActive ? (sm ? 10 : 15) : (sm ? 9 : 12),
                       color: 'rgba(240,240,255,0.55)', lineHeight: 1.6,
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                       overflow: 'hidden', flex: 1, margin: 0, paddingRight: 8,
@@ -339,6 +343,7 @@ export default function Home() {
               onChange={e => setInput(e.target.value)}
               placeholder={`예: ${EXAMPLES[exampleIdx]}`}
               autoFocus
+              className="home-search-input"
               style={{
                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
                 padding: '22px 68px 22px 24px', fontSize: 18, color: 'var(--text)', fontFamily: 'inherit',
