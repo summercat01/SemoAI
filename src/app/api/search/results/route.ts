@@ -80,27 +80,30 @@ export async function POST(req: NextRequest) {
       ? `CASE WHEN ${kwConditions.join(' OR ')} THEN 5 ELSE 0 END`
       : '0';
 
+    const scoreExpr = `(
+      CASE WHEN c.slug = ANY($1::text[]) THEN 20 ELSE 0 END +
+      CASE WHEN EXISTS (
+        SELECT 1 FROM ai_service_tags ast
+        JOIN tags t ON ast.tag_id = t.id
+        WHERE ast.ai_service_id = s.id AND t.slug = ANY($2::text[])
+      ) THEN 10 ELSE 0 END +
+      ${kwScore} +
+      CASE WHEN s.is_featured THEN 3 ELSE 0 END
+    )`;
+
     const orderBy = sort === 'name'
       ? 's.name ASC'
       : sort === 'name_desc'
         ? 's.name DESC'
-        : `(
-            CASE WHEN c.slug = ANY($1::text[]) THEN 20 ELSE 0 END +
-            CASE WHEN EXISTS (
-              SELECT 1 FROM ai_service_tags ast
-              JOIN tags t ON ast.tag_id = t.id
-              WHERE ast.ai_service_id = s.id AND t.slug = ANY($2::text[])
-            ) THEN 10 ELSE 0 END +
-            ${kwScore} +
-            CASE WHEN s.is_featured THEN 3 ELSE 0 END
-          ) DESC, s.is_featured DESC`;
+        : `score DESC, s.is_featured DESC`;
 
     const { rows } = await pool.query(`
       SELECT DISTINCT
         s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url,
         s.skill_level, s.target_user, s.key_features,
         c.name as category_name, c.slug as category_slug,
-        s.is_featured
+        s.is_featured,
+        ${scoreExpr} as score
       FROM ai_services s
       LEFT JOIN categories c ON s.category_id = c.id
       WHERE ${where}
