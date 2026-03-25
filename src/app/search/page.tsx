@@ -126,12 +126,11 @@ function RecommendCard({ r }: { r: RecommendationResult }) {
 const PAGE_SIZE = 12;
 
 function PaginatedResults({
-  recommendations, total, category, onClose,
+  recommendations, total, category,
 }: {
   recommendations: RecommendationResult[];
   total: number;
   category: string;
-  onClose: () => void;
 }) {
   const [page, setPage] = useState(1);
   const [dbCards, setDbCards] = useState<RecommendationResult[]>([]);
@@ -200,15 +199,6 @@ function PaginatedResults({
         </div>
       )}
 
-      {/* Close */}
-      <div style={{ textAlign: 'center', marginTop: 14 }}>
-        <button onClick={onClose}
-          style={{ padding: '7px 20px', borderRadius: 20, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
-          접기 ↑
-        </button>
-      </div>
     </div>
   );
 }
@@ -512,7 +502,6 @@ function SearchContent() {
                   recommendations={recommendations}
                   total={total!}
                   category={category}
-                  onClose={() => setShowResults(false)}
                 />
               </div>
             )}
