@@ -39,7 +39,7 @@ interface ConvData {
   recommendations: RecommendationResult[];
   total: number;
   summary: string;
-  category: string | null;
+  categories: string[];
 }
 
 function genId() {
@@ -126,11 +126,11 @@ function RecommendCard({ r }: { r: RecommendationResult }) {
 const PAGE_SIZE = 12;
 
 function PaginatedResults({
-  recommendations, total, category,
+  recommendations, total, categories,
 }: {
   recommendations: RecommendationResult[];
   total: number;
-  category: string;
+  categories: string[];
 }) {
   const [page, setPage] = useState(1);
   const [dbCards, setDbCards] = useState<RecommendationResult[]>([]);
@@ -143,14 +143,14 @@ function PaginatedResults({
       const res = await fetch('/api/search/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories: [category], tags: [], keywords: [], page: dbPage, pageSize: PAGE_SIZE }),
+        body: JSON.stringify({ categories, tags: [], keywords: [], page: dbPage, pageSize: PAGE_SIZE }),
       });
       const data = await res.json();
       setDbCards(data.results || []);
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [categories]);
 
   const goTo = (p: number) => {
     setPage(p);
@@ -212,7 +212,7 @@ function SearchContent() {
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [summary, setSummary] = useState('');
-  const [category, setCategory] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [input, setInput] = useState('');
   const [searching, setSearching] = useState(false);
@@ -245,7 +245,7 @@ function SearchContent() {
   const doSearch = useCallback(async (
     query: string,
     convId: string,
-    lockedCategory: string | null,
+    lockedCategories: string[],
     prevChatMessages: ChatMsg[],
   ) => {
     const userMsg: UserMsg = { type: 'user', content: query };
@@ -265,12 +265,12 @@ function SearchContent() {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation, category: lockedCategory }),
+        body: JSON.stringify({ conversation, categories: lockedCategories.length > 0 ? lockedCategories : undefined }),
       });
       const data = await res.json();
 
-      const detectedCategory: string = data.category || lockedCategory || null;
-      setCategory(detectedCategory);
+      const detectedCategories: string[] = data.categories || lockedCategories;
+      setCategories(detectedCategories);
       setRecommendations(data.recommendations || []);
       setTotal(data.total ?? 0);
       setSummary(data.summary || '');
@@ -286,7 +286,7 @@ function SearchContent() {
         recommendations: data.recommendations || [],
         total: data.total ?? 0,
         summary: data.summary || '',
-        category: detectedCategory,
+        categories: detectedCategories,
       }, title);
     } catch {
       setSummary('죄송해요, 검색 중 오류가 발생했어요.');
@@ -302,7 +302,7 @@ function SearchContent() {
     if (q) {
       const id = genId();
       setCurrentId(id);
-      doSearch(q, id, null, []);
+      doSearch(q, id, [], []);
     }
   }, [searchParams, doSearch]);
 
@@ -313,7 +313,7 @@ function SearchContent() {
     setInput('');
 
     if (chatMessages.length > 0 && currentId) {
-      doSearch(q, currentId, category, chatMessages);
+      doSearch(q, currentId, categories, chatMessages);
     } else {
       const id = genId();
       setCurrentId(id);
@@ -321,9 +321,9 @@ function SearchContent() {
       setRecommendations([]);
       setTotal(null);
       setSummary('');
-      setCategory(null);
+      setCategories([]);
       setShowResults(false);
-      doSearch(q, id, null, []);
+      doSearch(q, id, [], []);
     }
   };
 
@@ -342,7 +342,7 @@ function SearchContent() {
       setRecommendations(data.recommendations || []);
       setTotal(data.total ?? null);
       setSummary(data.summary || '');
-      setCategory(data.category || null);
+      setCategories(data.categories || []);
       setCurrentId(id);
       setShowResults(false);
     } catch {}
@@ -354,7 +354,7 @@ function SearchContent() {
     setRecommendations([]);
     setTotal(null);
     setSummary('');
-    setCategory(null);
+    setCategories([]);
     setShowResults(false);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
@@ -496,12 +496,12 @@ function SearchContent() {
           <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Recommendations + pagination (page 1 = Claude picks, 2+ = DB) */}
-            {showResults && recommendations.length > 0 && category && (
+            {showResults && recommendations.length > 0 && categories.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 <PaginatedResults
                   recommendations={recommendations}
                   total={total!}
-                  category={category}
+                  categories={categories}
                 />
               </div>
             )}

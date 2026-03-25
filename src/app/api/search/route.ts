@@ -7,33 +7,36 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const CATEGORIES = ['image-generation','video','music','coding','writing','education','chatbot','design','business','game-dev'];
 
-// Fast rule-based category detection
-function detectCategory(query: string): string | null {
+// Fast rule-based category detection — returns up to 2 relevant categories
+function detectCategories(query: string): string[] {
   const q = query.toLowerCase();
-  if (/노래|음악|작곡|비트|멜로디|사운드|오디오|tts|음성|보이스/.test(q)) return 'music';
-  if (/영상|동영상|유튜브|쇼츠|릴스|비디오|영화|클립/.test(q)) return 'video';
-  if (/그림|이미지|사진|일러스트|아트|그리기|아이콘|로고|이모지/.test(q)) return 'image-generation';
-  if (/코딩|프로그래밍|개발|코드|앱 만들|웹사이트|sql|디버그/.test(q)) return 'coding';
-  if (/글쓰기|번역|요약|소설|카피|블로그|에세이|작문/.test(q)) return 'writing';
-  if (/게임/.test(q)) return 'game-dev';
-  if (/챗봇|대화|채팅|어시스턴트/.test(q)) return 'chatbot';
-  if (/디자인|ui|ux|슬라이드|프레젠테이션|포스터/.test(q)) return 'design';
-  if (/교육|공부|학습|과외|영어|수학/.test(q)) return 'education';
-  if (/비즈니스|마케팅|seo|영업|고객|업무|자동화|생산성/.test(q)) return 'business';
-  return null;
+  const result: string[] = [];
+  if (/노래|음악|작곡|비트|멜로디|사운드|오디오|tts|음성|보이스/.test(q)) result.push('music');
+  if (/영상|동영상|유튜브|쇼츠|릴스|비디오|영화|클립/.test(q)) result.push('video');
+  if (/그림|이미지|사진|일러스트|아트|그리기|아이콘|로고|이모지/.test(q)) result.push('image-generation');
+  if (/코딩|프로그래밍|개발|코드|앱 만들|웹사이트|sql|디버그/.test(q)) result.push('coding');
+  if (/글쓰기|번역|요약|소설|카피|블로그|에세이|작문/.test(q)) result.push('writing');
+  if (/게임/.test(q)) result.push('game-dev', 'coding');
+  if (/챗봇|대화|채팅|어시스턴트/.test(q)) result.push('chatbot');
+  if (/디자인|ui|ux|슬라이드|프레젠테이션|포스터/.test(q)) result.push('design');
+  if (/교육|공부|학습|과외|영어|수학/.test(q)) result.push('education');
+  if (/비즈니스|마케팅|seo|영업|고객|업무|자동화|생산성/.test(q)) result.push('business');
+  return [...new Set(result)].slice(0, 3);
 }
 
-async function detectCategoryWithClaude(query: string): Promise<string> {
+// Claude fallback — returns up to 3 categories
+async function detectCategoriesWithClaude(query: string): Promise<string[]> {
   const response = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 20,
+    max_tokens: 40,
     messages: [{
       role: 'user',
-      content: `사용자 요청: "${query}"\n다음 중 딱 1개만 선택 (슬러그 그대로 출력): image-generation, video, music, coding, writing, education, chatbot, design, business, game-dev`
+      content: `사용자 요청: "${query}"\n관련 카테고리를 최대 3개 선택해 쉼표로 구분 출력 (슬러그 그대로): image-generation, video, music, coding, writing, education, chatbot, design, business, game-dev`,
     }],
   });
   const text = (response.content[0].type === 'text' ? response.content[0].text : '').trim().toLowerCase();
-  return CATEGORIES.find(c => text.includes(c)) || 'business';
+  const found = CATEGORIES.filter(c => text.includes(c));
+  return found.length > 0 ? found.slice(0, 3) : ['business'];
 }
 
 interface ConvTurn {
@@ -97,44 +100,48 @@ JSON만 반환:
 
 export async function POST(req: NextRequest) {
   try {
-    const { conversation = [], category: lockedCategory } = await req.json() as {
+    const { conversation = [], categories: lockedCategories } = await req.json() as {
       conversation: ConvTurn[];
-      category?: string;
+      categories?: string[];
     };
 
     if (!conversation.length) {
       return NextResponse.json({ recommendations: [], total: 0, summary: '' });
     }
 
-    // 1. Determine category (locked after first turn)
-    const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content).join(' ');
-    const category = lockedCategory
-      || detectCategory(userMessages)
-      || await detectCategoryWithClaude(conversation[0].content);
+    // 1. Determine categories (locked after first turn)
+    let categories: string[];
+    if (lockedCategories && lockedCategories.length > 0) {
+      categories = lockedCategories;
+    } else {
+      const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content).join(' ');
+      const ruled = detectCategories(userMessages);
+      categories = ruled.length > 0 ? ruled : await detectCategoriesWithClaude(conversation[0].content);
+    }
 
-    // 2. Fetch up to 100 services from this category
+    // 2. Fetch up to 100 services from all matched categories
     const { rows: services } = await pool.query<ServiceRow>(`
       SELECT s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url,
              s.skill_level, s.target_user, s.key_features,
              c.name as category_name, c.slug as category_slug, s.is_featured
       FROM ai_services s
       LEFT JOIN categories c ON s.category_id = c.id
-      WHERE s.is_active = true AND c.slug = $1
+      WHERE s.is_active = true AND c.slug = ANY($1::text[])
       ORDER BY s.is_featured DESC, s.id
       LIMIT 100
-    `, [category]);
+    `, [categories]);
 
-    // 3. Total count in this category
+    // 3. Total count across matched categories
     const { rows: countRows } = await pool.query(
       `SELECT COUNT(*) as total FROM ai_services s
        LEFT JOIN categories c ON s.category_id = c.id
-       WHERE s.is_active = true AND c.slug = $1`,
-      [category]
+       WHERE s.is_active = true AND c.slug = ANY($1::text[])`,
+      [categories]
     );
     const total = parseInt(countRows[0].total);
 
     if (services.length === 0) {
-      return NextResponse.json({ recommendations: [], total: 0, category, summary: '서비스를 찾지 못했어요' });
+      return NextResponse.json({ recommendations: [], total: 0, categories, summary: '서비스를 찾지 못했어요' });
     }
 
     // 4. Ask Claude to recommend specific services
@@ -150,11 +157,10 @@ export async function POST(req: NextRequest) {
       })
       .filter((s): s is ServiceRow & { reason: string } => s !== null);
 
-    return NextResponse.json({ recommendations, total, category, nextQuestion, summary });
+    return NextResponse.json({ recommendations, total, categories, nextQuestion, summary });
 
   } catch (error) {
     console.error('Search error:', error);
-    // Fallback: return featured services
     try {
       const { rows } = await pool.query(`
         SELECT s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url,
