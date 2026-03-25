@@ -84,7 +84,7 @@ const PRICING_BADGE: Record<string, { label: string; color: string }> = {
 function RecommendCard({ r }: { r: RecommendationResult }) {
   const badge = PRICING_BADGE[r.pricing_type] ?? { label: r.pricing_type, color: '#888' };
   return (
-    <a href={r.website_url} target="_blank" rel="noopener noreferrer"
+    <a href={`/service/${r.slug}`}
       style={{
         display: 'flex', flexDirection: 'column', gap: 10, padding: '16px',
         borderRadius: 14, background: 'rgba(255,255,255,0.04)',

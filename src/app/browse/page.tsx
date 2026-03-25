@@ -81,7 +81,7 @@ const PAGE_SIZE = 24;
 function ServiceCard({ s }: { s: ServiceResult }) {
   const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
   return (
-    <a href={s.website_url} target="_blank" rel="noopener noreferrer"
+    <a href={`/service/${s.slug}`}
       style={{
         display: 'flex', flexDirection: 'column', gap: 10, padding: '16px',
         borderRadius: 14, background: 'rgba(255,255,255,0.04)',
