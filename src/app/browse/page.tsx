@@ -215,7 +215,7 @@ export default function BrowsePage() {
         background: 'rgba(7,7,15,0.85)', backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="browse-hdr" style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
             <div style={{
               width: 30, height: 30, borderRadius: 8,
@@ -227,7 +227,7 @@ export default function BrowsePage() {
           </a>
 
           {/* Search bar */}
-          <div style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
+          <div className="browse-searchbar" style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
             <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}
               width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -248,7 +248,7 @@ export default function BrowsePage() {
           </div>
 
           {/* Sort */}
-          <select value={sort} onChange={e => setSort(e.target.value)} style={{
+          <select className="browse-sort" value={sort} onChange={e => setSort(e.target.value)} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
             borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'var(--text)',
             fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
@@ -256,7 +256,7 @@ export default function BrowsePage() {
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} style={{ background: '#0a0a18' }}>{o.label}</option>)}
           </select>
 
-          <a href="/search" style={{
+          <a href="/search" className="browse-ai-btn" style={{
             padding: '9px 16px', borderRadius: 10, textDecoration: 'none',
             background: 'rgba(124,106,247,0.12)', border: '1px solid rgba(124,106,247,0.3)',
             color: '#c4b5fd', fontSize: 13, fontWeight: 600, flexShrink: 0,
@@ -264,7 +264,7 @@ export default function BrowsePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
+      <div className="browse-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
 
         {/* Filters */}
         <div style={{ marginBottom: 24 }}>

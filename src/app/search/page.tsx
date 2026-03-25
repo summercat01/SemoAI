@@ -373,16 +373,23 @@ function SearchContent() {
   const lastMsg = chatMessages[chatMessages.length - 1];
   const pendingQuestion = lastMsg?.type === 'ai_question' ? lastMsg.content : null;
   const hasResult = total !== null;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden' }}>
 
+      {/* Mobile overlay */}
+      <div className="search-overlay" onClick={() => setSidebarOpen(false)} style={{
+        display: 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        zIndex: 199, backdropFilter: 'blur(2px)',
+      }} />
+
       {/* Sidebar */}
-      <aside style={{
+      <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} style={{
         width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column',
         background: 'rgba(255,255,255,0.025)', borderRight: '1px solid var(--border)',
       }}>
-        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', color: 'inherit' }}>
             <div style={{
               width: 32, height: 32, borderRadius: 8,
@@ -395,6 +402,12 @@ function SearchContent() {
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>세상의 모든 AI</div>
             </div>
           </a>
+          {/* Close button (mobile only) */}
+          <button className="mob-menu-btn" onClick={() => setSidebarOpen(false)} style={{
+            display: 'none', width: 28, height: 28, borderRadius: 6, border: 'none',
+            background: 'rgba(255,255,255,0.08)', color: 'var(--text)', cursor: 'pointer',
+            alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+          }}>×</button>
         </div>
 
         <div style={{ padding: '12px 12px 4px' }}>
@@ -456,6 +469,28 @@ function SearchContent() {
 
       {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Mobile top bar */}
+        <div className="mob-menu-btn" style={{
+          display: 'none', alignItems: 'center', gap: 10,
+          padding: '10px 16px', borderBottom: '1px solid var(--border)',
+          background: 'rgba(7,7,15,0.9)', flexShrink: 0,
+        }}>
+          <button onClick={() => setSidebarOpen(true)} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8,
+            border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)',
+            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+            메뉴
+          </button>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff' }}>△</div>
+            <span style={{ fontSize: 14, fontWeight: 800 }}>SEMO AI</span>
+          </a>
+        </div>
 
         {/* TOP: result count + 자세히보기 */}
         {(hasResult || searching) && (

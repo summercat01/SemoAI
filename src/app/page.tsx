@@ -60,9 +60,6 @@ const EXAMPLES = [
   'AI로 노래를 만들어 보고 싶어요',
 ];
 
-const CARD_WIDTH = 480;
-const SIDE_GAP = 24;
-
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<AiService[]>([]);
@@ -71,6 +68,20 @@ export default function Home() {
   const [animated, setAnimated] = useState(true);
   const [input, setInput] = useState('');
   const [exampleIdx, setExampleIdx] = useState(0);
+  const [cardWidth, setCardWidth] = useState(480);
+
+  const SIDE_GAP = cardWidth < 400 ? 12 : 24;
+  const CARD_WIDTH = cardWidth;
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCardWidth(w < 480 ? Math.max(w - 56, 240) : w < 768 ? 380 : 480);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   useEffect(() => {
     fetch('/api/services/featured')
@@ -144,7 +155,7 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <header style={{
+      <header className="home-header" style={{
         position: 'relative', zIndex: 10,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '28px 56px',
@@ -163,13 +174,13 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <nav style={{ display: 'flex', gap: 12, marginLeft: -60 }}>
+        <nav className="home-nav" style={{ display: 'flex', gap: 12, marginLeft: -60 }}>
           {[
             { label: 'AI 추천', href: '/search', highlight: true },
             { label: '탐색', href: '/browse', highlight: false },
             { label: '로그인', href: '#', highlight: false },
           ].map(item => (
-            <a key={item.label} href={item.href} style={{
+            <a key={item.label} href={item.href} className="home-nav-item" style={{
               fontSize: 15, fontWeight: 600, textDecoration: 'none',
               padding: '9px 20px', borderRadius: 12,
               border: item.highlight ? '1.5px solid rgba(124,106,247,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
@@ -200,7 +211,7 @@ export default function Home() {
       }}>
 
         {/* Hero */}
-        <div style={{ textAlign: 'center', marginBottom: 44, padding: '0 40px' }}>
+        <div className="home-hero" style={{ textAlign: 'center', marginBottom: 44, padding: '0 40px' }}>
           <h1 style={{
             fontSize: 'clamp(42px, 6vw, 72px)',
             fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
@@ -305,7 +316,7 @@ export default function Home() {
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 760, padding: '0 40px' }}>
+        <form onSubmit={handleSubmit} className="home-search" style={{ width: '100%', maxWidth: 760, padding: '0 40px' }}>
           <div style={{
             position: 'relative',
             background: 'rgba(255,255,255,0.04)',
@@ -346,7 +357,7 @@ export default function Home() {
               </svg>
             </button>
           </div>
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>
+          <p className="home-hint" style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>
             세상의 모든 AI 중에서 딱 맞는 것을 찾아드릴게요
           </p>
         </form>

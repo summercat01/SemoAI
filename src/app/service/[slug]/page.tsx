@@ -107,7 +107,7 @@ export default function ServicePage() {
         background: 'rgba(7,7,15,0.85)', backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="svc-header-inner" style={{ maxWidth: 900, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}>
             <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff' }}>△</div>
             <span style={{ fontSize: 14, fontWeight: 800 }}>SEMO AI</span>
@@ -121,7 +121,7 @@ export default function ServicePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
+      <div className="svc-content" style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
 
         {/* Hero */}
         <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', marginBottom: 40, flexWrap: 'wrap' }}>
@@ -149,7 +149,7 @@ export default function ServicePage() {
             </div>
           </div>
           {/* CTA */}
-          <a href={service.website_url} target="_blank" rel="noopener noreferrer" style={{
+          <a href={service.website_url} target="_blank" rel="noopener noreferrer" className="svc-hero-cta" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '14px 28px', borderRadius: 14,
             background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',

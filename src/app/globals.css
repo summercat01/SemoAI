@@ -60,3 +60,60 @@ html, body {
   animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
   pointer-events: none;
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive utilities ── */
+
+/* Home */
+@media (max-width: 640px) {
+  .home-header    { padding: 14px 20px !important; }
+  .home-nav       { gap: 6px !important; margin-left: 0 !important; }
+  .home-nav-item  { font-size: 12px !important; padding: 7px 12px !important; border-radius: 9px !important; }
+  .home-hero      { padding: 0 20px !important; margin-bottom: 28px !important; }
+  .home-hero h1   { font-size: clamp(32px, 8vw, 48px) !important; }
+  .home-search    { padding: 0 16px !important; max-width: 100% !important; }
+  .home-hint      { display: none !important; }
+}
+
+/* Browse */
+@media (max-width: 720px) {
+  .browse-hdr        { flex-wrap: wrap !important; gap: 10px !important; padding: 12px 16px !important; }
+  .browse-searchbar  { max-width: none !important; flex: 1 1 calc(100% - 120px) !important; min-width: 0 !important; }
+  .browse-sort       { flex: 0 0 auto !important; }
+  .browse-ai-btn     { display: none !important; }
+  .browse-content    { padding: 16px !important; }
+}
+
+/* Search sidebar */
+.search-sidebar {
+  transition: transform 0.3s ease;
+}
+@media (max-width: 768px) {
+  .search-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100dvh !important;
+    z-index: 200 !important;
+    transform: translateX(-100%) !important;
+    width: 260px !important;
+  }
+  .search-sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.6) !important;
+  }
+  .mob-menu-btn { display: flex !important; }
+  .search-overlay { display: block !important; }
+}
+@media (min-width: 769px) {
+  .mob-menu-btn    { display: none !important; }
+  .search-overlay  { display: none !important; }
+}
+
+/* Service detail */
+@media (max-width: 640px) {
+  .svc-header-inner { padding: 10px 16px !important; }
+  .svc-hero-cta     { width: 100% !important; justify-content: center !important; }
+  .svc-content      { padding: 24px 16px !important; }
+}
