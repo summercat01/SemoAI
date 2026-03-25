@@ -163,13 +163,28 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <nav style={{ display: 'flex', gap: 32, marginLeft: -80 }}>
-          {[{ label: '추천', href: '/search' }, { label: '탐색', href: '/browse' }, { label: '로그인', href: '#' }].map(item => (
+        <nav style={{ display: 'flex', gap: 12, marginLeft: -60 }}>
+          {[
+            { label: 'AI 추천', href: '/search', highlight: true },
+            { label: '탐색', href: '/browse', highlight: false },
+            { label: '로그인', href: '#', highlight: false },
+          ].map(item => (
             <a key={item.label} href={item.href} style={{
-              fontSize: 18, color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s',
+              fontSize: 15, fontWeight: 600, textDecoration: 'none',
+              padding: '9px 20px', borderRadius: 12,
+              border: item.highlight ? '1.5px solid rgba(124,106,247,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
+              background: item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.25), rgba(79,195,247,0.15))' : 'rgba(255,255,255,0.06)',
+              color: item.highlight ? '#c4b5fd' : 'rgba(255,255,255,0.8)',
+              transition: 'all 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}>
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.background = item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.4), rgba(79,195,247,0.25))' : 'rgba(255,255,255,0.12)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.25), rgba(79,195,247,0.15))' : 'rgba(255,255,255,0.06)';
+            }}>
               {item.label}
             </a>
           ))}
