@@ -164,13 +164,13 @@ export default function Home() {
           </div>
         </div>
         <nav style={{ display: 'flex', gap: 40 }}>
-          {['탐색', '카테고리', '마이페이지'].map(item => (
-            <a key={item} href="#" style={{
+          {[{ label: '탐색', href: '/browse' }, { label: '카테고리', href: '/browse' }, { label: '마이페이지', href: '#' }].map(item => (
+            <a key={item.label} href={item.href} style={{
               fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
-              {item}
+              {item.label}
             </a>
           ))}
         </nav>

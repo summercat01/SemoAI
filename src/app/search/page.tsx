@@ -397,7 +397,23 @@ function SearchContent() {
           </a>
         </div>
 
-        <div style={{ padding: '12px 12px 8px' }}>
+        <div style={{ padding: '12px 12px 4px' }}>
+          <a href="/browse" style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 14px', borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+            color: 'var(--text-muted)', fontSize: 13, fontWeight: 500,
+            textDecoration: 'none', marginBottom: 8, transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            전체 탐색
+          </a>
+        </div>
+        <div style={{ padding: '0 12px 8px' }}>
           <button onClick={startNew} style={{
             width: '100%', padding: '9px 14px', borderRadius: 10,
             border: '1px solid rgba(124,106,247,0.35)', background: 'rgba(124,106,247,0.08)',
