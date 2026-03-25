@@ -320,12 +320,12 @@ export default function Home() {
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSubmit} className="home-search" style={{ width: '100%', maxWidth: 760, padding: '0 40px' }}>
+        <form onSubmit={handleSubmit} className="home-search" style={{ width: '100%', maxWidth: 760, padding: sm ? '0 20px' : '0 40px' }}>
           <div style={{
             position: 'relative',
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid var(--border)',
-            borderRadius: 16, backdropFilter: 'blur(8px)',
+            borderRadius: sm ? 12 : 16, backdropFilter: 'blur(8px)',
             transition: 'border-color 0.2s, box-shadow 0.2s',
           }}
           onFocusCapture={e => {
@@ -343,15 +343,16 @@ export default function Home() {
               onChange={e => setInput(e.target.value)}
               placeholder={`예: ${EXAMPLES[exampleIdx]}`}
               autoFocus
-              className="home-search-input"
               style={{
                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                padding: '22px 68px 22px 24px', fontSize: 18, color: 'var(--text)', fontFamily: 'inherit',
+                padding: sm ? '13px 46px 13px 14px' : '22px 68px 22px 24px',
+                fontSize: sm ? 15 : 18,
+                color: 'var(--text)', fontFamily: 'inherit',
               }}
             />
             <button type="submit" disabled={!input.trim()} style={{
-              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-              width: 44, height: 44, borderRadius: 12, border: 'none',
+              position: 'absolute', right: sm ? 8 : 12, top: '50%', transform: 'translateY(-50%)',
+              width: sm ? 34 : 44, height: sm ? 34 : 44, borderRadius: sm ? 9 : 12, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
               background: input.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
