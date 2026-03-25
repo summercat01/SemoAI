@@ -163,13 +163,13 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <nav style={{ display: 'flex', gap: 40 }}>
+        <nav style={{ display: 'flex', gap: 32, marginLeft: -80 }}>
           {[{ label: '추천', href: '/search' }, { label: '탐색', href: '/browse' }, { label: '로그인', href: '#' }].map(item => (
             <a key={item.label} href={item.href} style={{
-              fontSize: 16, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s',
+              fontSize: 18, color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}>
               {item.label}
             </a>
           ))}
