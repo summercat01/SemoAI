@@ -482,7 +482,7 @@ function SearchContent() {
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.2)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)'; }}>
-                      {showResults ? '접기 ↑' : `자세히 보기 (${recommendations.length}개 추천)`}
+                      {showResults ? '접기 ↑' : '자세히 보기'}
                     </button>
                   )}
                 </>
