@@ -154,7 +154,7 @@ function PaginatedResults({
 
   const goTo = (p: number) => {
     setPage(p);
-    if (p > 1) fetchDb(p - 1); // UI page 2 = DB page 1, etc.
+    if (p > 1) fetchDb(p); // UI page 2 = DB page 2 (page 1 overlaps with Claude picks)
   };
 
   const cards = page === 1 ? recommendations : dbCards;
