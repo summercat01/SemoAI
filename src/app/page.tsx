@@ -208,12 +208,13 @@ export default function Home() {
       <main style={{
         flex: 1, position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 0 20px',
+        justifyContent: sm ? 'center' : 'space-between',
+        gap: sm ? 20 : 0,
+        padding: sm ? '0 0 16px' : '12px 0 20px',
       }}>
 
         {/* Hero */}
-        <div className="home-hero" style={{ textAlign: 'center', marginBottom: 16, padding: '0 40px' }}>
+        <div className="home-hero" style={{ textAlign: 'center', marginBottom: sm ? 0 : 16, padding: sm ? '0 24px' : '0 40px' }}>
           <h1 style={{
             fontSize: 'clamp(32px, 5vw, 60px)',
             fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
@@ -239,7 +240,7 @@ export default function Home() {
         {/* Carousel */}
         <div style={{
           width: '100%', overflow: 'hidden',
-          marginBottom: 16,
+          marginBottom: sm ? 0 : 16,
         }}>
           {/* Track */}
           <div style={{
