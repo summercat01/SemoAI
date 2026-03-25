@@ -67,22 +67,28 @@ html, body {
 
 /* Home */
 @media (max-width: 640px) {
-  .home-header    { padding: 14px 20px !important; }
-  .home-nav       { gap: 6px !important; margin-left: 0 !important; }
-  .home-nav-item  { font-size: 12px !important; padding: 7px 12px !important; border-radius: 9px !important; }
-  .home-hero      { padding: 0 20px !important; margin-bottom: 28px !important; }
-  .home-hero h1   { font-size: clamp(32px, 8vw, 48px) !important; }
-  .home-search    { padding: 0 16px !important; max-width: 100% !important; }
-  .home-hint      { display: none !important; }
+  .home-header      { padding: 12px 16px !important; align-items: center !important; }
+  .home-logo-sub    { display: none !important; }
+  .home-logo-icon   { width: 28px !important; height: 28px !important; font-size: 14px !important; border-radius: 7px !important; }
+  .home-logo-name   { font-size: 15px !important; }
+  .home-nav         { gap: 6px !important; margin-left: 0 !important; }
+  .home-nav-item    { font-size: 12px !important; padding: 6px 10px !important; border-radius: 8px !important; border-width: 1px !important; }
+  .home-hero        { padding: 0 20px !important; margin-bottom: 12px !important; }
+  .home-hero h1     { letter-spacing: -1px !important; margin-bottom: 8px !important; }
+  .home-search      { padding: 0 16px !important; max-width: 100% !important; }
+  .home-hint        { display: none !important; }
 }
 
 /* Browse */
 @media (max-width: 720px) {
-  .browse-hdr        { flex-wrap: wrap !important; gap: 10px !important; padding: 12px 16px !important; }
-  .browse-searchbar  { max-width: none !important; flex: 1 1 calc(100% - 120px) !important; min-width: 0 !important; }
-  .browse-sort       { flex: 0 0 auto !important; }
+  .browse-hdr        { flex-wrap: wrap !important; gap: 8px !important; padding: 10px 14px !important; }
+  .browse-searchbar  { max-width: none !important; flex: 1 1 100% !important; min-width: 0 !important; order: 2; }
+  .browse-sort       { flex: 1 1 auto !important; order: 3; }
   .browse-ai-btn     { display: none !important; }
-  .browse-content    { padding: 16px !important; }
+  .browse-content    { padding: 14px 14px !important; }
+}
+@media (max-width: 480px) {
+  .browse-sort       { width: 100% !important; }
 }
 
 /* Search sidebar */
@@ -113,7 +119,15 @@ html, body {
 
 /* Service detail */
 @media (max-width: 640px) {
-  .svc-header-inner { padding: 10px 16px !important; }
+  .svc-header-inner { padding: 10px 14px !important; gap: 8px !important; }
+  .svc-header-inner span { font-size: 12px !important; }
   .svc-hero-cta     { width: 100% !important; justify-content: center !important; }
-  .svc-content      { padding: 24px 16px !important; }
+  .svc-content      { padding: 20px 14px !important; }
+}
+
+/* Search page — chat input/result area */
+@media (max-width: 768px) {
+  .search-result-top { padding: 12px 16px !important; }
+  .search-chat-area  { padding: 16px 14px 12px !important; }
+  .search-input-area { padding: 10px 14px 14px !important; }
 }

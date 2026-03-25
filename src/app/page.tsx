@@ -161,15 +161,15 @@ export default function Home() {
         padding: '28px 56px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
+          <div className="home-logo-icon" style={{
             width: 40, height: 40, borderRadius: 10,
             background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 20, fontWeight: 800, color: '#fff',
           }}>△</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</span>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>
+            <span className="home-logo-name" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</span>
+            <span className="home-logo-sub" style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>
               <span style={{ color: '#a78bfa', fontWeight: 700 }}>세</span>상의 <span style={{ color: '#a78bfa', fontWeight: 700 }}>모</span>든 <span style={{ color: '#4fc3f7', fontWeight: 700 }}>AI</span>
             </span>
           </div>

@@ -499,7 +499,7 @@ function SearchContent() {
             background: 'rgba(7,7,15,0.7)', backdropFilter: 'blur(12px)',
             flexShrink: 0,
           }}>
-            <div style={{ maxWidth: 960, margin: '0 auto', padding: '20px 24px 16px', textAlign: 'center' }}>
+            <div className="search-result-top" style={{ maxWidth: 960, margin: '0 auto', padding: '20px 24px 16px', textAlign: 'center' }}>
               {searching && !hasResult ? (
                 <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <div style={{
@@ -543,7 +543,7 @@ function SearchContent() {
         )}
 
         {/* Scrollable: panel + chat */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 16px' }}>
+        <div className="search-chat-area" style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 16px' }}>
           <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Recommendations + pagination (page 1 = Claude picks, 2+ = DB) */}
@@ -629,7 +629,7 @@ function SearchContent() {
         </div>
 
         {/* Input */}
-        <div style={{
+        <div className="search-input-area" style={{
           borderTop: '1px solid var(--border)',
           padding: '14px 24px 18px',
           background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)', flexShrink: 0,
