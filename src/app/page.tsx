@@ -207,37 +207,37 @@ export default function Home() {
         flex: 1, position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '32px 0 52px',
+        padding: '12px 0 20px',
       }}>
 
         {/* Hero */}
-        <div className="home-hero" style={{ textAlign: 'center', marginBottom: 44, padding: '0 40px' }}>
+        <div className="home-hero" style={{ textAlign: 'center', marginBottom: 16, padding: '0 40px' }}>
           <h1 style={{
-            fontSize: 'clamp(42px, 6vw, 72px)',
+            fontSize: 'clamp(32px, 5vw, 60px)',
             fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
             background: 'linear-gradient(135deg, #ffffff 20%, #a78bfa 60%, #4fc3f7)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            marginBottom: 14,
+            marginBottom: 10,
           }}>
             당신이 원하는 AI는<br />무엇인가요?
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 20 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 17 }}>
             원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
           </p>
-          <div style={{ marginTop: 28, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{
-              fontSize: 'clamp(48px, 7vw, 80px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
+              fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
               background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>4000+</span>
-            <span style={{ fontSize: 'clamp(14px, 1.5vw, 18px)', color: 'var(--text-muted)', fontWeight: 500 }}>AI 서비스</span>
+            <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 500 }}>AI 서비스</span>
           </div>
         </div>
 
         {/* Carousel */}
         <div style={{
           width: '100%', overflow: 'hidden',
-          marginBottom: 44,
+          marginBottom: 16,
         }}>
           {/* Track */}
           <div style={{
@@ -257,9 +257,9 @@ export default function Home() {
                   style={{
                     flexShrink: 0,
                     width: CARD_WIDTH,
-                    aspectRatio: '1 / 1',
-                    borderRadius: 28,
-                    padding: isActive ? '40px 36px' : '32px 28px',
+                    aspectRatio: '3 / 2',
+                    borderRadius: 24,
+                    padding: isActive ? '24px 28px' : '18px 22px',
                     background: isActive
                       ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
                       : 'rgba(255,255,255,0.04)',
@@ -278,7 +278,7 @@ export default function Home() {
                   {/* Top: name centered */}
                   <div style={{ textAlign: 'center' }}>
                     <span style={{
-                      fontWeight: 800, fontSize: isActive ? 40 : 24,
+                      fontWeight: 800, fontSize: isActive ? 28 : 18,
                       letterSpacing: '-0.4px', transition: 'font-size 0.4s',
                     }}>{s.name}</span>
                   </div>
@@ -286,7 +286,7 @@ export default function Home() {
                   <div style={{
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 220 : 130} />
+                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? 130 : 80} />
                   </div>
                   {/* Bottom: tagline left + badge right */}
                   <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
@@ -307,7 +307,7 @@ export default function Home() {
               );
             }) : Array.from({ length: 5 }).map((_, i) => (
               <div key={i} style={{
-                flexShrink: 0, width: CARD_WIDTH, aspectRatio: '1/1',
+                flexShrink: 0, width: CARD_WIDTH, aspectRatio: '3/2',
                 borderRadius: 28, background: 'rgba(255,255,255,0.04)',
                 border: '1px solid var(--border)',
               }} />
