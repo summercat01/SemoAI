@@ -171,7 +171,10 @@ export default function Home() {
               border: '1.5px solid rgba(255,255,255,0.15)',
               background: 'rgba(255,255,255,0.06)',
               color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
-            }}>로그아웃</button>
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >로그아웃</button>
           ) : (
             <a href="/login" className="home-nav-item" style={{
               fontSize: 15, fontWeight: 600, textDecoration: 'none',
@@ -179,7 +182,10 @@ export default function Home() {
               border: '1.5px solid rgba(255,255,255,0.15)',
               background: 'rgba(255,255,255,0.06)',
               color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
-            }}>로그인</a>
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >로그인</a>
           )}
         </nav>
       </header>
