@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import ServiceLogo from '@/components/ServiceLogo';
+import { PRICING_BADGE } from '@/lib/constants';
 
 interface RecommendationResult {
   id: number;
@@ -45,41 +47,6 @@ interface ConvData {
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
-
-function getDomain(url: string) {
-  try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
-}
-
-function ServiceLogo({ url, name, size = 32 }: { url: string; name: string; size?: number }) {
-  const domain = getDomain(url);
-  const [src, setSrc] = useState(0);
-  const sources = domain ? [
-    `https://logo.clearbit.com/${domain}?size=128`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-  ] : [];
-  if (!domain || src >= sources.length) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: size * 0.2,
-        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.45, fontWeight: 800, color: '#fff', flexShrink: 0,
-      }}>{name[0]}</div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={sources[src]} alt={name} onError={() => setSrc(s => s + 1)}
-      style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: 2, flexShrink: 0 }} />
-  );
-}
-
-const PRICING_BADGE: Record<string, { label: string; color: string }> = {
-  free:          { label: '무료',     color: '#22c55e' },
-  freemium:      { label: '무료+',    color: '#60a5fa' },
-  paid:          { label: '유료',     color: '#f97316' },
-  'open-source': { label: '오픈소스', color: '#a78bfa' },
-};
 
 function RecommendCard({ r }: { r: RecommendationResult }) {
   const badge = PRICING_BADGE[r.pricing_type] ?? { label: r.pricing_type, color: '#888' };
@@ -267,6 +234,10 @@ function SearchContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation, categories: lockedCategories.length > 0 ? lockedCategories : undefined }),
       });
+      if (res.status === 429) {
+        setSummary('요청이 너무 많아요. 잠시 후 다시 시도해주세요.');
+        return;
+      }
       const data = await res.json();
 
       const detectedCategories: string[] = data.categories || lockedCategories;
@@ -379,10 +350,12 @@ function SearchContent() {
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden' }}>
 
       {/* Mobile overlay */}
-      <div className="search-overlay" onClick={() => setSidebarOpen(false)} style={{
-        display: 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-        zIndex: 199, backdropFilter: 'blur(2px)',
-      }} />
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          zIndex: 199, backdropFilter: 'blur(2px)',
+        }} />
+      )}
 
       {/* Sidebar */}
       <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} style={{

@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
 import Anthropic from '@anthropic-ai/sdk';
+import pool from '@/lib/db';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// In-memory rate limiter: IP → { minute: [timestamps], day: [timestamps] }
+const rateLimitMap = new Map<string, { minute: number[]; day: number[] }>();
+const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_PER_DAY = 100;
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const minuteAgo = now - 60_000;
+  const dayAgo = now - 86_400_000;
+
+  let entry = rateLimitMap.get(ip);
+  if (!entry) {
+    entry = { minute: [], day: [] };
+    rateLimitMap.set(ip, entry);
+  }
+
+  entry.minute = entry.minute.filter(t => t > minuteAgo);
+  entry.day = entry.day.filter(t => t > dayAgo);
+
+  if (entry.minute.length >= RATE_LIMIT_PER_MINUTE) {
+    const retryAfter = Math.ceil((entry.minute[0] + 60_000 - now) / 1000);
+    return { allowed: false, retryAfter };
+  }
+  if (entry.day.length >= RATE_LIMIT_PER_DAY) {
+    return { allowed: false, retryAfter: 3600 };
+  }
+
+  entry.minute.push(now);
+  entry.day.push(now);
+  return { allowed: true };
+}
 
 const CATEGORIES = ['image-generation','video','music','coding','writing','education','chatbot','design','business','game-dev'];
 
@@ -99,6 +130,15 @@ JSON만 반환:
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? req.headers.get('x-real-ip') ?? 'unknown';
+  const { allowed, retryAfter } = checkRateLimit(ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: '요청이 너무 많아요. 잠시 후 다시 시도해주세요.' },
+      { status: 429, headers: retryAfter ? { 'Retry-After': String(retryAfter) } : {} }
+    );
+  }
+
   try {
     const { conversation = [], categories: lockedCategories } = await req.json() as {
       conversation: ConvTurn[];

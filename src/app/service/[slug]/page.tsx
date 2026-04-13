@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import ServiceLogo from '@/components/ServiceLogo';
+import { getDomain, PRICING_BADGE } from '@/lib/constants';
 
 interface ServiceDetail {
   id: number;
@@ -21,41 +23,6 @@ interface ServiceDetail {
   category_slug: string;
   tags: string[];
 }
-
-function getDomain(url: string) {
-  try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
-}
-
-function ServiceLogo({ url, name, size = 80 }: { url: string; name: string; size?: number }) {
-  const domain = getDomain(url);
-  const [src, setSrc] = useState(0);
-  const sources = domain ? [
-    `https://logo.clearbit.com/${domain}?size=256`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
-  ] : [];
-  if (!domain || src >= sources.length) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: size * 0.2,
-        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.45, fontWeight: 800, color: '#fff', flexShrink: 0,
-      }}>{name[0]}</div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={sources[src]} alt={name} onError={() => setSrc(s => s + 1)}
-      style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: size * 0.08, flexShrink: 0 }} />
-  );
-}
-
-const PRICING_BADGE: Record<string, { label: string; color: string }> = {
-  free:          { label: '무료',     color: '#22c55e' },
-  freemium:      { label: '무료+',    color: '#60a5fa' },
-  paid:          { label: '유료',     color: '#f97316' },
-  'open-source': { label: '오픈소스', color: '#a78bfa' },
-};
 
 const SKILL_LABEL: Record<string, string> = {
   beginner:     '입문자',

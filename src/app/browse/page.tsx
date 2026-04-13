@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import ServiceLogo from '@/components/ServiceLogo';
+import { PRICING_BADGE } from '@/lib/constants';
 
 interface ServiceResult {
   id: number;
@@ -15,41 +17,6 @@ interface ServiceResult {
   is_featured: boolean;
 }
 
-function getDomain(url: string) {
-  try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
-}
-
-function ServiceLogo({ url, name, size = 40 }: { url: string; name: string; size?: number }) {
-  const domain = getDomain(url);
-  const [src, setSrc] = useState(0);
-  const sources = domain ? [
-    `https://logo.clearbit.com/${domain}?size=128`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-  ] : [];
-  if (!domain || src >= sources.length) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: size * 0.2,
-        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.45, fontWeight: 800, color: '#fff', flexShrink: 0,
-      }}>{name[0]}</div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={sources[src]} alt={name} onError={() => setSrc(s => s + 1)}
-      style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: 2, flexShrink: 0 }} />
-  );
-}
-
-const PRICING_BADGE: Record<string, { label: string; color: string }> = {
-  free:          { label: '무료',     color: '#22c55e' },
-  freemium:      { label: '무료+',    color: '#60a5fa' },
-  paid:          { label: '유료',     color: '#f97316' },
-  'open-source': { label: '오픈소스', color: '#a78bfa' },
-};
-
 const CATEGORY_OPTIONS = [
   { slug: 'image-generation', label: '🎨 이미지 생성' },
   { slug: 'video',            label: '🎬 영상' },
@@ -63,12 +30,7 @@ const CATEGORY_OPTIONS = [
   { slug: 'game-dev',         label: '🎮 게임' },
 ];
 
-const PRICING_OPTIONS = [
-  { slug: 'free',          label: '무료',     color: '#22c55e' },
-  { slug: 'freemium',      label: '무료+',    color: '#60a5fa' },
-  { slug: 'paid',          label: '유료',     color: '#f97316' },
-  { slug: 'open-source',   label: '오픈소스', color: '#a78bfa' },
-];
+const PRICING_OPTIONS = Object.entries(PRICING_BADGE).map(([slug, { label, color }]) => ({ slug, label, color }));
 
 const SORT_OPTIONS = [
   { value: 'score',     label: '관련도순' },

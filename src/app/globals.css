@@ -111,11 +111,9 @@ html, body {
     box-shadow: 4px 0 32px rgba(0,0,0,0.6) !important;
   }
   .mob-menu-btn { display: flex !important; }
-  .search-overlay { display: block !important; }
 }
 @media (min-width: 769px) {
-  .mob-menu-btn    { display: none !important; }
-  .search-overlay  { display: none !important; }
+  .mob-menu-btn { display: none !important; }
 }
 
 /* Service detail */

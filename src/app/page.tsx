@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import ServiceLogo from '@/components/ServiceLogo';
+import { PRICING_BADGE } from '@/lib/constants';
 
 interface AiService {
   id: number;
@@ -11,46 +14,6 @@ interface AiService {
   website_url: string;
   category_name: string;
 }
-
-function getDomain(url: string) {
-  try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
-}
-
-function ServiceLogo({ url, name, size = 48 }: { url: string; name: string; size?: number }) {
-  const domain = getDomain(url);
-  const [src, setSrc] = useState(0);
-  const sources = domain ? [
-    `https://logo.clearbit.com/${domain}?size=512`,
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
-  ] : [];
-
-  if (!domain || src >= sources.length) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: size * 0.25,
-        background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.42, fontWeight: 800, color: '#fff',
-      }}>{name[0]}</div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={sources[src]}
-      alt={name}
-      onError={() => setSrc(s => s + 1)}
-      style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: size * 0.08 }}
-    />
-  );
-}
-
-const PRICING_BADGE: Record<string, { label: string; color: string }> = {
-  free:          { label: '무료',     color: '#22c55e' },
-  freemium:      { label: '무료+',    color: '#60a5fa' },
-  paid:          { label: '유료',     color: '#f97316' },
-  'open-source': { label: '오픈소스', color: '#a78bfa' },
-};
 
 const EXAMPLES = [
   '코딩 없이 게임을 만들고 싶어요',
@@ -62,6 +25,7 @@ const EXAMPLES = [
 
 export default function Home() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [services, setServices] = useState<AiService[]>([]);
   // position tracks absolute index in tripled array; starts at len (middle copy)
   const [position, setPosition] = useState(0);
@@ -180,7 +144,6 @@ export default function Home() {
           {[
             { label: 'AI 추천', href: '/search', highlight: true },
             { label: '탐색', href: '/browse', highlight: false },
-            { label: '로그인', href: '#', highlight: false },
           ].map(item => (
             <a key={item.label} href={item.href} className="home-nav-item" style={{
               fontSize: 15, fontWeight: 600, textDecoration: 'none',
@@ -201,6 +164,23 @@ export default function Home() {
               {item.label}
             </a>
           ))}
+          {session ? (
+            <button onClick={() => signOut()} className="home-nav-item" style={{
+              fontSize: 15, fontWeight: 600, cursor: 'pointer',
+              padding: '9px 20px', borderRadius: 12,
+              border: '1.5px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
+            }}>로그아웃</button>
+          ) : (
+            <a href="/login" className="home-nav-item" style={{
+              fontSize: 15, fontWeight: 600, textDecoration: 'none',
+              padding: '9px 20px', borderRadius: 12,
+              border: '1.5px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
+            }}>로그인</a>
+          )}
         </nav>
       </header>
 
