@@ -15,17 +15,29 @@ export default function LoginPage() {
   if (status === 'loading') return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 360, padding: '0 24px', textAlign: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      {/* Background glows */}
+      <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', filter: 'blur(120px)', background: 'rgba(124,106,247,0.18)', top: '-20%', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', filter: 'blur(100px)', background: 'rgba(79,195,247,0.1)', bottom: '-10%', right: '-10%', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none' }} />
+
+      <div style={{ width: '100%', maxWidth: 360, padding: '36px 32px', textAlign: 'center', position: 'relative', zIndex: 1, background: 'rgba(124,106,247,0.06)', border: '1px solid rgba(124,106,247,0.18)', borderRadius: 24, backdropFilter: 'blur(12px)' }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 32 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 12,
-            background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 800, color: '#fff',
-          }}>△</div>
-          <span style={{ fontSize: 22, fontWeight: 800 }}>SEMO AI</span>
+          <svg width="36" height="36" viewBox="0 0 28 28" fill="none">
+            <defs>
+              <linearGradient id="lgLogin" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#a78bfa" />
+                <stop offset="100%" stopColor="#4fc3f7" />
+              </linearGradient>
+            </defs>
+            <polygon points="14,3 26,24 2,24" stroke="url(#lgLogin)" strokeWidth="2" strokeLinejoin="round" fill="none" />
+          </svg>
+          <span style={{
+            fontSize: 22, fontWeight: 800, letterSpacing: '2px',
+            background: 'linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          }}>SEMO AI</span>
         </div>
 
         <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>로그인</h1>
@@ -35,7 +47,7 @@ export default function LoginPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <button
-            onClick={() => signIn('kakao', { callbackUrl: '/' })}
+            onClick={() => signIn('kakao', { callbackUrl: '/' }, { prompt: 'login' })}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               width: '100%', padding: '14px', borderRadius: 12, border: 'none',
@@ -50,7 +62,7 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={() => signIn('google', { callbackUrl: '/' })}
+            onClick={() => signIn('google', { callbackUrl: '/' }, { prompt: 'select_account' })}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               width: '100%', padding: '14px', borderRadius: 12,

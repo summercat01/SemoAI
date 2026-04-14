@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ServiceLogo from '@/components/ServiceLogo';
 import { PRICING_BADGE } from '@/lib/constants';
 
-interface RecommendationResult {
+interface ServiceResult {
   id: number;
   name: string;
   slug: string;
@@ -13,45 +12,38 @@ interface RecommendationResult {
   pricing_type: string;
   website_url: string;
   skill_level: string;
-  target_user: string;
-  key_features: string;
   category_name: string;
   category_slug: string;
   is_featured: boolean;
-  reason: string;
 }
 
-interface ConvTurn {
-  role: 'user' | 'ai';
-  content: string;
-}
+const CATEGORY_OPTIONS = [
+  { slug: 'image-generation', label: '🎨 이미지 생성' },
+  { slug: 'video',            label: '🎬 영상' },
+  { slug: 'music',            label: '🎵 음악' },
+  { slug: 'coding',           label: '💻 코딩' },
+  { slug: 'writing',          label: '✍️ 글쓰기' },
+  { slug: 'education',        label: '📚 교육' },
+  { slug: 'chatbot',          label: '💬 챗봇' },
+  { slug: 'design',           label: '🖌️ 디자인' },
+  { slug: 'business',         label: '💼 비즈니스' },
+  { slug: 'game-dev',         label: '🎮 게임' },
+];
 
-interface UserMsg       { type: 'user';         content: string; }
-interface AiQuestionMsg { type: 'ai_question';  content: string; }
-type ChatMsg = UserMsg | AiQuestionMsg;
+const PRICING_OPTIONS = Object.entries(PRICING_BADGE).map(([slug, { label, color }]) => ({ slug, label, color }));
 
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: number;
-}
+const SORT_OPTIONS = [
+  { value: 'score',     label: '관련도순' },
+  { value: 'name',      label: '이름 오름차순' },
+  { value: 'name_desc', label: '이름 내림차순' },
+];
 
-interface ConvData {
-  chatMessages: ChatMsg[];
-  recommendations: RecommendationResult[];
-  total: number;
-  summary: string;
-  categories: string[];
-}
+const PAGE_SIZE = 24;
 
-function genId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-function RecommendCard({ r }: { r: RecommendationResult }) {
-  const badge = PRICING_BADGE[r.pricing_type] ?? { label: r.pricing_type, color: '#888' };
+function ServiceCard({ s }: { s: ServiceResult }) {
+  const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
   return (
-    <a href={`/service/${r.slug}`}
+    <a href={`/service/${s.slug}`}
       style={{
         display: 'flex', flexDirection: 'column', gap: 10, padding: '16px',
         borderRadius: 14, background: 'rgba(255,255,255,0.04)',
@@ -62,10 +54,10 @@ function RecommendCard({ r }: { r: RecommendationResult }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <ServiceLogo url={r.website_url} name={r.name} size={40} />
+        <ServiceLogo url={s.website_url} name={s.name} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{r.category_name}</div>
+          <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{s.category_name}</div>
         </div>
         <span style={{
           fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20,
@@ -73,58 +65,97 @@ function RecommendCard({ r }: { r: RecommendationResult }) {
           whiteSpace: 'nowrap', flexShrink: 0,
         }}>{badge.label}</span>
       </div>
-      {r.reason && (
-        <div style={{
-          fontSize: 13, color: '#c4b5fd', lineHeight: 1.5,
-          padding: '7px 10px', borderRadius: 8,
-          background: 'rgba(124,106,247,0.1)', border: '1px solid rgba(124,106,247,0.2)',
-        }}>
-          ✦ {r.reason}
-        </div>
-      )}
       <p style={{
         fontSize: 13, color: 'rgba(240,240,255,0.55)', lineHeight: 1.5, margin: 0,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-      }}>{r.tagline}</p>
+      }}>{s.tagline}</p>
     </a>
   );
 }
 
-const PAGE_SIZE = 12;
+function FilterChip({
+  label, active, color, onClick,
+}: { label: string; active: boolean; color?: string; onClick: () => void }) {
+  const base = color ?? '#7c6af7';
+  return (
+    <button onClick={onClick} style={{
+      padding: '6px 14px', borderRadius: 20, border: `1px solid ${active ? base + '88' : 'rgba(255,255,255,0.12)'}`,
+      background: active ? base + '22' : 'rgba(255,255,255,0.04)',
+      color: active ? '#fff' : 'var(--text-muted)',
+      fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer',
+      fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
+    }}
+    onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = base + '55'; e.currentTarget.style.color = 'var(--text)'; }}}
+    onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'var(--text-muted)'; }}}
+    >
+      {label}
+    </button>
+  );
+}
 
-function PaginatedResults({
-  recommendations, total, categories,
-}: {
-  recommendations: RecommendationResult[];
-  total: number;
-  categories: string[];
-}) {
+export default function BrowsePage() {
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedPricing, setSelectedPricing] = useState<string[]>([]);
+  const [sort, setSort] = useState('score');
+  const [results, setResults] = useState<ServiceResult[]>([]);
+  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [dbCards, setDbCards] = useState<RecommendationResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const fetchDb = useCallback(async (dbPage: number) => {
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
+
+  const fetchResults = useCallback(async (p: number) => {
     setLoading(true);
     try {
+      const keywords = debouncedQuery.trim() ? [debouncedQuery.trim()] : [];
       const res = await fetch('/api/search/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories, tags: [], keywords: [], page: dbPage, pageSize: PAGE_SIZE }),
+        body: JSON.stringify({
+          categories: selectedCategories,
+          tags: [],
+          keywords,
+          pricing: selectedPricing,
+          sort,
+          page: p,
+          pageSize: PAGE_SIZE,
+        }),
       });
       const data = await res.json();
-      setDbCards(data.results || []);
+      setResults(data.results || []);
+      setTotal(data.total || 0);
+      setPage(p);
     } finally {
       setLoading(false);
     }
-  }, [categories]);
+  }, [debouncedQuery, selectedCategories, selectedPricing, sort]);
 
-  const goTo = (p: number) => {
-    setPage(p);
-    if (p > 1) fetchDb(p); // UI page 2 = DB page 2 (page 1 overlaps with Claude picks)
+  // Fetch on filter change — reset to page 1
+  useEffect(() => {
+    fetchResults(1);
+  }, [fetchResults]);
+
+  const toggleCategory = (slug: string) =>
+    setSelectedCategories(prev => prev.includes(slug) ? prev.filter(c => c !== slug) : [...prev, slug]);
+
+  const togglePricing = (slug: string) =>
+    setSelectedPricing(prev => prev.includes(slug) ? prev.filter(p => p !== slug) : [...prev, slug]);
+
+  const clearAll = () => {
+    setSelectedCategories([]);
+    setSelectedPricing([]);
+    setQuery('');
+    setSort('score');
   };
-
-  const cards = page === 1 ? recommendations : dbCards;
 
   const getPages = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -135,531 +166,147 @@ function PaginatedResults({
     return pages;
   };
 
-  return (
-    <div>
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ display: 'inline-block', width: 24, height: 24, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7', animation: 'spin 0.8s linear infinite' }} />
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-          {cards.map(r => <RecommendCard key={r.id} r={r} />)}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap', marginTop: 16 }}>
-          <button onClick={() => goTo(page - 1)} disabled={page === 1}
-            style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === 1 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === 1 ? 0.4 : 1 }}>
-            ← 이전
-          </button>
-          {getPages().map((p, i) => p === '...'
-            ? <span key={`d${i}`} style={{ color: 'var(--text-muted)', fontSize: 13 }}>…</span>
-            : <button key={p} onClick={() => goTo(p as number)}
-                style={{ width: 32, height: 32, borderRadius: 7, border: '1px solid', borderColor: page === p ? 'rgba(124,106,247,0.6)' : 'var(--border)', background: page === p ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)', color: page === p ? '#c4b5fd' : 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: page === p ? 700 : 400 }}>{p}</button>
-          )}
-          <button onClick={() => goTo(page + 1)} disabled={page === totalPages}
-            style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === totalPages ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === totalPages ? 0.4 : 1 }}>
-            다음 →
-          </button>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-function SearchContent() {
-  const searchParams = useSearchParams();
-
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
-  const [total, setTotal] = useState<number | null>(null);
-  const [summary, setSummary] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [showResults, setShowResults] = useState(false);
-  const [input, setInput] = useState('');
-  const [searching, setSearching] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('semo_conversations') || '[]');
-      setConversations(stored);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, searching]);
-
-  const persistConv = useCallback((id: string, data: ConvData, title: string) => {
-    localStorage.setItem(`semo_conv_${id}`, JSON.stringify(data));
-    setConversations(prev => {
-      const exists = prev.find(c => c.id === id);
-      const updated = exists ? prev : [{ id, title: title.slice(0, 40), createdAt: Date.now() }, ...prev];
-      localStorage.setItem('semo_conversations', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const doSearch = useCallback(async (
-    query: string,
-    convId: string,
-    lockedCategories: string[],
-    prevChatMessages: ChatMsg[],
-  ) => {
-    const userMsg: UserMsg = { type: 'user', content: query };
-    const newChat: ChatMsg[] = [...prevChatMessages, userMsg];
-    setChatMessages(newChat);
-    setSearching(true);
-    setShowResults(false);
-
-    const conversation: ConvTurn[] = newChat
-      .filter(m => m.type === 'user' || m.type === 'ai_question')
-      .map(m => ({
-        role: m.type === 'user' ? 'user' as const : 'ai' as const,
-        content: (m as UserMsg | AiQuestionMsg).content,
-      }));
-
-    try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation, categories: lockedCategories.length > 0 ? lockedCategories : undefined }),
-      });
-      if (res.status === 429) {
-        setSummary('요청이 너무 많아요. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-      const data = await res.json();
-
-      const detectedCategories: string[] = data.categories || lockedCategories;
-      setCategories(detectedCategories);
-      setRecommendations(data.recommendations || []);
-      setTotal(data.total ?? 0);
-      setSummary(data.summary || '');
-
-      const finalChat: ChatMsg[] = data.nextQuestion
-        ? [...newChat, { type: 'ai_question' as const, content: data.nextQuestion }]
-        : newChat;
-      setChatMessages(finalChat);
-
-      const title = (newChat[0] as UserMsg)?.content || query;
-      persistConv(convId, {
-        chatMessages: finalChat,
-        recommendations: data.recommendations || [],
-        total: data.total ?? 0,
-        summary: data.summary || '',
-        categories: detectedCategories,
-      }, title);
-    } catch {
-      setSummary('죄송해요, 검색 중 오류가 발생했어요.');
-    } finally {
-      setSearching(false);
-    }
-  }, [persistConv]);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    const q = searchParams.get('q');
-    if (q) {
-      const id = genId();
-      setCurrentId(id);
-      doSearch(q, id, [], []);
-    }
-  }, [searchParams, doSearch]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q) return;
-    setInput('');
-
-    if (chatMessages.length > 0 && currentId) {
-      doSearch(q, currentId, categories, chatMessages);
-    } else {
-      const id = genId();
-      setCurrentId(id);
-      setChatMessages([]);
-      setRecommendations([]);
-      setTotal(null);
-      setSummary('');
-      setCategories([]);
-      setShowResults(false);
-      doSearch(q, id, [], []);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
-    }
-  };
-
-  const loadConversation = (id: string) => {
-    try {
-      const data: ConvData = JSON.parse(localStorage.getItem(`semo_conv_${id}`) || 'null');
-      if (!data) return;
-      setChatMessages(data.chatMessages || []);
-      setRecommendations(data.recommendations || []);
-      setTotal(data.total ?? null);
-      setSummary(data.summary || '');
-      setCategories(data.categories || []);
-      setCurrentId(id);
-      setShowResults(false);
-    } catch {}
-  };
-
-  const startNew = () => {
-    setCurrentId(null);
-    setChatMessages([]);
-    setRecommendations([]);
-    setTotal(null);
-    setSummary('');
-    setCategories([]);
-    setShowResults(false);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  const deleteConversation = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    localStorage.removeItem(`semo_conv_${id}`);
-    setConversations(prev => {
-      const updated = prev.filter(c => c.id !== id);
-      localStorage.setItem('semo_conversations', JSON.stringify(updated));
-      return updated;
-    });
-    if (currentId === id) startNew();
-  };
-
-  const lastMsg = chatMessages[chatMessages.length - 1];
-  const pendingQuestion = lastMsg?.type === 'ai_question' ? lastMsg.content : null;
-  const hasResult = total !== null;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const hasFilters = selectedCategories.length > 0 || selectedPricing.length > 0 || query.trim();
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)} style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          zIndex: 199, backdropFilter: 'blur(2px)',
-        }} />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} style={{
-        width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column',
-        background: 'rgba(255,255,255,0.025)', borderRight: '1px solid var(--border)',
+      {/* Header */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 20,
+        background: 'rgba(8,7,26,0.85)', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', color: 'inherit' }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, fontWeight: 800, color: '#fff',
-            }}>△</div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>세상의 모든 AI</div>
-            </div>
+        <div className="browse-hdr" style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', flexShrink: 0 }}>
+            <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+              <defs>
+                <linearGradient id="lgBrowse" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="#4fc3f7" />
+                </linearGradient>
+              </defs>
+              <polygon points="14,3 26,24 2,24" stroke="url(#lgBrowse)" strokeWidth="2" strokeLinejoin="round" fill="none" />
+            </svg>
+            <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '1.5px', background: 'linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SEMO AI</span>
           </a>
-          {/* Close button (mobile only) */}
-          <button className="mob-menu-btn" onClick={() => setSidebarOpen(false)} style={{
-            display: 'none', width: 28, height: 28, borderRadius: 6, border: 'none',
-            background: 'rgba(255,255,255,0.08)', color: 'var(--text)', cursor: 'pointer',
-            alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
-          }}>×</button>
-        </div>
 
-        <div style={{ padding: '12px 12px 4px' }}>
-          <a href="/browse" style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 14px', borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-            color: 'var(--text-muted)', fontSize: 13, fontWeight: 500,
-            textDecoration: 'none', marginBottom: 8, transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {/* Search bar */}
+          <div className="browse-searchbar" style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
+            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            전체 탐색
-          </a>
-        </div>
-        <div style={{ padding: '0 12px 8px' }}>
-          <button onClick={startNew} style={{
-            width: '100%', padding: '9px 14px', borderRadius: 10,
-            border: '1px solid rgba(124,106,247,0.35)', background: 'rgba(124,106,247,0.08)',
-            color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.15)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.08)'; }}>
-            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 새 대화
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
-          {conversations.length === 0 ? (
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '20px 8px' }}>대화 기록이 없어요</p>
-          ) : conversations.map(conv => (
-            <div key={conv.id} onClick={() => loadConversation(conv.id)} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '9px 10px', borderRadius: 9, cursor: 'pointer', marginBottom: 2,
-              background: currentId === conv.id ? 'rgba(124,106,247,0.12)' : 'transparent',
-              border: `1px solid ${currentId === conv.id ? 'rgba(124,106,247,0.3)' : 'transparent'}`,
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-            onMouseLeave={e => { if (currentId !== conv.id) e.currentTarget.style.background = 'transparent'; }}>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>💬</span>
-              <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'var(--text)' : 'var(--text-muted)' }}>{conv.title}</span>
-              <button onClick={(e) => deleteConversation(conv.id, e)} style={{
-                flexShrink: 0, width: 20, height: 20, borderRadius: 4,
-                border: 'none', background: 'transparent', color: 'var(--text-muted)',
-                cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: 0, transition: 'opacity 0.15s',
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="서비스명, 설명으로 검색..."
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+                borderRadius: 10, padding: '9px 12px 9px 38px', fontSize: 14,
+                color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.2s',
+                boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>×</button>
-            </div>
-          ))}
-        </div>
-      </aside>
+              onFocus={e => e.currentTarget.style.borderColor = 'rgba(124,106,247,0.6)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            />
+          </div>
 
-      {/* Main area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-        {/* Mobile top bar */}
-        <div className="mob-menu-btn" style={{
-          display: 'none', alignItems: 'center', gap: 10,
-          padding: '10px 16px', borderBottom: '1px solid var(--border)',
-          background: 'rgba(7,7,15,0.9)', flexShrink: 0,
-        }}>
-          <button onClick={() => setSidebarOpen(true)} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8,
-            border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)',
-            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
+          {/* Sort */}
+          <select className="browse-sort" value={sort} onChange={e => setSort(e.target.value)} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+            borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'var(--text)',
+            fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-            메뉴
-          </button>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff' }}>△</div>
-            <span style={{ fontSize: 14, fontWeight: 800 }}>SEMO AI</span>
-          </a>
+            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} style={{ background: '#0a0a18' }}>{o.label}</option>)}
+          </select>
+
+          <a href="/recommend" className="browse-ai-btn" style={{
+            padding: '9px 16px', borderRadius: 10, textDecoration: 'none',
+            background: 'rgba(124,106,247,0.12)', border: '1px solid rgba(124,106,247,0.3)',
+            color: '#c4b5fd', fontSize: 13, fontWeight: 600, flexShrink: 0,
+          }}>AI 추천받기</a>
+        </div>
+      </header>
+
+      <div className="browse-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
+
+        {/* Filters */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, marginRight: 4 }}>카테고리</span>
+            {CATEGORY_OPTIONS.map(c => (
+              <FilterChip key={c.slug} label={c.label} active={selectedCategories.includes(c.slug)}
+                onClick={() => toggleCategory(c.slug)} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, marginRight: 4 }}>가격</span>
+            {PRICING_OPTIONS.map(p => (
+              <FilterChip key={p.slug} label={p.label} active={selectedPricing.includes(p.slug)}
+                color={p.color} onClick={() => togglePricing(p.slug)} />
+            ))}
+            {hasFilters && (
+              <button onClick={clearAll} style={{
+                marginLeft: 8, padding: '6px 12px', borderRadius: 20,
+                border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
+                color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}>
+                × 초기화
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* TOP: result count + 자세히보기 */}
-        {(hasResult || searching) && (
-          <div style={{
-            borderBottom: '1px solid var(--border)',
-            background: 'rgba(7,7,15,0.7)', backdropFilter: 'blur(12px)',
-            flexShrink: 0,
-          }}>
-            <div className="search-result-top" style={{ maxWidth: 960, margin: '0 auto', padding: '20px 24px 16px', textAlign: 'center' }}>
-              {searching && !hasResult ? (
-                <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: '50%',
-                    border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  <span style={{ fontSize: 15, color: 'var(--text-muted)' }}>AI가 분석 중...</span>
-                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                </div>
-              ) : hasResult && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span style={{
-                      fontSize: 56, fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
-                      background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
-                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    }}>{total!.toLocaleString()}</span>
-                    <span style={{ fontSize: 22, fontWeight: 700 }}>개 서비스 발견</span>
-                  </div>
-                  {summary && (
-                    <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 14px' }}>{summary}</p>
-                  )}
-                  {recommendations.length > 0 && (
-                    <button onClick={() => setShowResults(v => !v)} style={{
-                      padding: '10px 28px', borderRadius: 20,
-                      border: `1px solid ${showResults ? 'rgba(124,106,247,0.5)' : 'rgba(124,106,247,0.35)'}`,
-                      background: showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)',
-                      color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                      fontFamily: 'inherit', transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.2)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = showResults ? 'rgba(124,106,247,0.15)' : 'rgba(124,106,247,0.08)'; }}>
-                      {showResults ? '접기 ↑' : '자세히 보기'}
-                    </button>
-                  )}
-                </>
-              )}
+        {/* Result count */}
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {loading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7', animation: 'spin 0.8s linear infinite' }} />
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>검색 중...</span>
             </div>
+          ) : (
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{total.toLocaleString()}개</strong> 서비스
+            </span>
+          )}
+        </div>
+
+        {/* Grid */}
+        {!loading && results.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>검색 결과가 없어요</p>
+            <p style={{ fontSize: 14 }}>다른 검색어나 필터를 시도해보세요.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            {results.map(s => <ServiceCard key={s.id} s={s} />)}
           </div>
         )}
 
-        {/* Scrollable: panel + chat */}
-        <div className="search-chat-area" style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 16px' }}>
-          <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-            {/* Recommendations + pagination (page 1 = Claude picks, 2+ = DB) */}
-            {showResults && recommendations.length > 0 && categories.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <PaginatedResults
-                  recommendations={recommendations}
-                  total={total!}
-                  categories={categories}
-                />
-              </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap', marginTop: 32 }}>
+            <button onClick={() => fetchResults(page - 1)} disabled={page === 1}
+              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === 1 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === 1 ? 0.4 : 1 }}>
+              ← 이전
+            </button>
+            {getPages().map((p, i) => p === '...'
+              ? <span key={`d${i}`} style={{ color: 'var(--text-muted)', fontSize: 13, padding: '0 4px' }}>…</span>
+              : <button key={p} onClick={() => fetchResults(p as number)}
+                  style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid', borderColor: page === p ? 'rgba(124,106,247,0.6)' : 'var(--border)', background: page === p ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)', color: page === p ? '#c4b5fd' : 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: page === p ? 700 : 400 }}>{p}</button>
             )}
-
-            {/* Empty state */}
-            {chatMessages.length === 0 && !searching && !hasResult && (
-              <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: 14, margin: '0 auto 16px',
-                  background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 28, fontWeight: 800, color: '#fff',
-                }}>△</div>
-                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>당신이 원하는 AI는 무엇인가요?</p>
-                <p style={{ fontSize: 15 }}>원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.</p>
-              </div>
-            )}
-
-            {/* Chat messages */}
-            {chatMessages.map((msg, idx) =>
-              msg.type === 'user' ? (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div style={{
-                    maxWidth: '70%', padding: '12px 18px',
-                    borderRadius: '18px 18px 4px 18px',
-                    background: 'linear-gradient(135deg, rgba(124,106,247,0.35), rgba(79,195,247,0.25))',
-                    border: '1px solid rgba(124,106,247,0.3)',
-                    fontSize: 15, lineHeight: 1.6,
-                  }}>{msg.content}</div>
-                </div>
-              ) : (
-                <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 8, flexShrink: 0, marginTop: 2,
-                    background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 800, color: '#fff',
-                  }}>△</div>
-                  <div style={{
-                    padding: '12px 16px', borderRadius: '4px 18px 18px 18px',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-                    fontSize: 15, lineHeight: 1.6, color: '#e2d9f3',
-                  }}>{msg.content}</div>
-                </div>
-              )
-            )}
-
-            {/* Searching indicator */}
-            {searching && (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontWeight: 800, color: '#fff',
-                }}>△</div>
-                <div style={{
-                  padding: '12px 16px', borderRadius: '4px 18px 18px 18px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}>
-                  <div style={{
-                    width: 16, height: 16, borderRadius: '50%',
-                    border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>AI가 분석 중...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+            <button onClick={() => fetchResults(page + 1)} disabled={page === totalPages}
+              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === totalPages ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === totalPages ? 0.4 : 1 }}>
+              다음 →
+            </button>
           </div>
-        </div>
-
-        {/* Input */}
-        <div className="search-input-area" style={{
-          borderTop: '1px solid var(--border)',
-          padding: '14px 24px 18px',
-          background: 'rgba(7,7,15,0.9)', backdropFilter: 'blur(12px)', flexShrink: 0,
-        }}>
-          <div style={{ maxWidth: 960, margin: '0 auto' }}>
-            <form onSubmit={handleSubmit}>
-              <div style={{
-                display: 'flex', gap: 10, alignItems: 'flex-end',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-                borderRadius: 14, padding: '10px 10px 10px 16px', transition: 'border-color 0.2s',
-              }}
-              onFocusCapture={e => e.currentTarget.style.borderColor = 'rgba(124,106,247,0.6)'}
-              onBlurCapture={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={pendingQuestion ? '답변을 입력하세요...' : '원하는 작업을 말해주세요...'}
-                  rows={1}
-                  style={{
-                    flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                    fontSize: 15, color: 'var(--text)', fontFamily: 'inherit',
-                    resize: 'none', lineHeight: 1.6, maxHeight: 120, overflowY: 'auto',
-                  }}
-                  onInput={e => {
-                    const el = e.currentTarget;
-                    el.style.height = 'auto';
-                    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-                  }}
-                />
-                <button type="submit" disabled={!input.trim() || searching} style={{
-                  width: 36, height: 36, borderRadius: 9, border: 'none', flexShrink: 0,
-                  cursor: input.trim() && !searching ? 'pointer' : 'default',
-                  background: input.trim() && !searching ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s',
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                </button>
-              </div>
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>
-                Enter로 전송 · Shift+Enter 줄바꿈
-              </p>
-            </form>
-          </div>
-        </div>
+        )}
       </div>
     </div>
-  );
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
-      <SearchContent />
-    </Suspense>
   );
 }

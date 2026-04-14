@@ -7,17 +7,18 @@
 }
 
 :root {
-  --bg: #07070f;
-  --bg2: #0d0d1a;
-  --surface: rgba(255, 255, 255, 0.04);
-  --surface-hover: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.18);
+  --bg: #08071a;
+  --bg2: #0e0c28;
+  --bg3: #120f30;
+  --surface: rgba(124, 106, 247, 0.07);
+  --surface-hover: rgba(124, 106, 247, 0.13);
+  --border: rgba(124, 106, 247, 0.18);
+  --border-hover: rgba(124, 106, 247, 0.35);
   --text: #f0f0ff;
-  --text-muted: rgba(240, 240, 255, 0.45);
+  --text-muted: rgba(210, 200, 255, 0.5);
   --accent: #7c6af7;
   --accent2: #4fc3f7;
-  --accent-glow: rgba(124, 106, 247, 0.35);
+  --accent-glow: rgba(124, 106, 247, 0.4);
 }
 
 html, body {
@@ -62,6 +63,74 @@ html, body {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-48px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes floatPhone {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+.about-left-enter  { animation: slideInLeft 0.7s cubic-bezier(0.4,0,0.2,1) both; }
+.about-right-enter { animation: fadeSlide 0.7s 0.2s cubic-bezier(0.4,0,0.2,1) both; }
+
+@keyframes underlineExpand {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes wordRise {
+  from { opacity: 0; transform: translateY(28px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+@keyframes countPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  70%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shimmerSweep {
+  0%   { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+
+.count-3d {
+  text-shadow:
+    0 1px 0 rgba(124,106,247,0.9),
+    0 2px 0 rgba(108,90,231,0.8),
+    0 3px 0 rgba(92,74,215,0.7),
+    0 4px 0 rgba(76,58,199,0.6),
+    0 5px 0 rgba(60,42,183,0.5),
+    0 6px 12px rgba(124,106,247,0.4),
+    0 12px 30px rgba(124,106,247,0.2);
+}
+
+.count-shimmer {
+  background: linear-gradient(
+    105deg,
+    #a78bfa 0%,
+    #c4b5fd 30%,
+    #ffffff 48%,
+    #e0d7ff 52%,
+    #4fc3f7 70%,
+    #a78bfa 100%
+  ) !important;
+  background-size: 300% auto !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  animation: countPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both,
+             shimmerSweep 1.2s 0.3s ease-in-out forwards;
+}
 
 /* ── Responsive utilities ── */
 

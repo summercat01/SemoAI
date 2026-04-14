@@ -18,20 +18,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ account }) {
       if (!account) return false;
-      await pool.query(
-        `INSERT INTO users (provider, provider_id) VALUES ($1, $2)
-         ON CONFLICT (provider, provider_id) DO NOTHING`,
-        [account.provider, account.providerAccountId]
-      );
+      try {
+        await pool.query(
+          `INSERT INTO users (provider, provider_id) VALUES ($1, $2)
+           ON CONFLICT (provider, provider_id) DO NOTHING`,
+          [account.provider, account.providerAccountId]
+        );
+      } catch (e) {
+        console.error('[auth] signIn DB error:', e);
+      }
       return true;
     },
     async jwt({ token, account }) {
       if (account) {
-        const { rows } = await pool.query(
-          'SELECT id FROM users WHERE provider = $1 AND provider_id = $2',
-          [account.provider, account.providerAccountId]
-        );
-        if (rows[0]) token.userId = rows[0].id;
+        try {
+          const { rows } = await pool.query(
+            'SELECT id FROM users WHERE provider = $1 AND provider_id = $2',
+            [account.provider, account.providerAccountId]
+          );
+          if (rows[0]) token.userId = rows[0].id;
+        } catch (e) {
+          console.error('[auth] jwt DB error:', e);
+        }
       }
       return token;
     },

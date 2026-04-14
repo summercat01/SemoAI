@@ -57,7 +57,7 @@ export default function ServicePage() {
   if (notFound || !service) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
       <p style={{ fontSize: 20, fontWeight: 700 }}>서비스를 찾을 수 없어요</p>
-      <a href="/browse" style={{ color: '#7c6af7', textDecoration: 'none', fontSize: 15 }}>← 탐색으로 돌아가기</a>
+      <a href="/search" style={{ color: '#7c6af7', textDecoration: 'none', fontSize: 15 }}>← 탐색으로 돌아가기</a>
     </div>
   );
 
@@ -71,17 +71,25 @@ export default function ServicePage() {
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(7,7,15,0.85)', backdropFilter: 'blur(12px)',
+        background: 'rgba(8,7,26,0.85)', backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border)',
       }}>
         <div className="svc-header-inner" style={{ maxWidth: 900, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff' }}>△</div>
-            <span style={{ fontSize: 14, fontWeight: 800 }}>SEMO AI</span>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+              <defs>
+                <linearGradient id="lgSvc" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="#4fc3f7" />
+                </linearGradient>
+              </defs>
+              <polygon points="14,3 26,24 2,24" stroke="url(#lgSvc)" strokeWidth="2" strokeLinejoin="round" fill="none" />
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: '1.5px', background: 'linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SEMO AI</span>
           </a>
           <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/</span>
           <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-            <a href="/browse" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>탐색</a>
+            <a href="/search" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>탐색</a>
           </span>
           <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/</span>
           <span style={{ fontSize: 14 }}>{service.name}</span>
@@ -104,7 +112,7 @@ export default function ServicePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 20, border: `1px solid ${badge.color}55`, color: badge.color, background: `${badge.color}18` }}>{badge.label}</span>
               {service.category_name && (
-                <a href={`/browse?category=${service.category_slug}`} style={{ fontSize: 13, padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-muted)', textDecoration: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                <a href={`/search?category=${service.category_slug}`} style={{ fontSize: 13, padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-muted)', textDecoration: 'none', background: 'rgba(255,255,255,0.05)' }}>
                   {service.category_name}
                 </a>
               )}
@@ -174,11 +182,11 @@ export default function ServicePage() {
 
         {/* Back links */}
         <div style={{ display: 'flex', gap: 12 }}>
-          <a href="/browse" style={{ fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <a href="/search" style={{ fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
             ← 탐색으로 돌아가기
           </a>
           <span style={{ color: 'var(--text-muted)' }}>·</span>
-          <a href="/search" style={{ fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
+          <a href="/recommend" style={{ fontSize: 14, color: 'var(--text-muted)', textDecoration: 'none' }}>
             AI 추천받기 →
           </a>
         </div>

@@ -5,8 +5,8 @@ import { BASE_URL } from '@/lib/constants';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, changeFrequency: 'daily', priority: 1 },
-    { url: `${BASE_URL}/browse`, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${BASE_URL}/search`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/search`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE_URL}/recommend`, changeFrequency: 'weekly', priority: 0.8 },
   ];
 
   try {

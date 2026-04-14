@@ -1,360 +1,121 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import ServiceLogo from '@/components/ServiceLogo';
-import { PRICING_BADGE } from '@/lib/constants';
-
-interface AiService {
-  id: number;
-  name: string;
-  tagline: string;
-  pricing_type: string;
-  website_url: string;
-  category_name: string;
-}
-
-const EXAMPLES = [
-  '코딩 없이 게임을 만들고 싶어요',
-  '내 고양이 사진으로 이미지 생성하고 싶어요',
-  '웹툰을 혼자 만들 수 있는 AI 알려줘',
-  '유튜브 쇼츠 영상 자동으로 만들고 싶어',
-  'AI로 노래를 만들어 보고 싶어요',
-];
+import { useRef, useCallback, useEffect, useState } from "react";
+import HomeHeader from "@/components/home/HomeHeader";
+import HeroSection from "@/components/home/HeroSection";
+import AboutSection from "@/components/home/AboutSection";
+import RecommendSection from "@/components/home/RecommendSection";
+import SearchSection from "@/components/home/SearchSection";
+import ContactSection from "@/components/home/ContactSection";
 
 export default function Home() {
-  const router = useRouter();
-  const { data: session } = useSession();
-  const [services, setServices] = useState<AiService[]>([]);
-  // position tracks absolute index in tripled array; starts at len (middle copy)
-  const [position, setPosition] = useState(0);
-  const [animated, setAnimated] = useState(true);
-  const [input, setInput] = useState('');
-  const [exampleIdx, setExampleIdx] = useState(0);
-  const [cardWidth, setCardWidth] = useState(480);
-
-  const SIDE_GAP = cardWidth < 280 ? 10 : cardWidth < 400 ? 14 : 24;
-  const CARD_WIDTH = cardWidth;
-  const sm = cardWidth < 260; // small card layout
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState("hero");
 
   useEffect(() => {
-    const update = () => {
-      const w = window.innerWidth;
-      // Mobile: show ~3 cards (active centered, 2 partially visible)
-      setCardWidth(w < 480 ? Math.round(w * 0.54) : w < 768 ? 360 : 480);
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+    // Back navigation: popstate fires when browser back/forward is used.
+    // If the destination is home (/), force a full reload.
+    const handlePopState = () => {
+      if (window.location.pathname === "/") {
+        window.location.reload();
+      }
     };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   useEffect(() => {
-    fetch('/api/services/featured')
-      .then(r => r.json())
-      .then(d => {
-        setServices(d.services || []);
-        setPosition(d.services?.length ?? 0); // start in middle copy
-      });
-  }, []);
-
-  const len = services.length;
-  // tripled list for seamless loop
-  const tripled = len > 0 ? [...services, ...services, ...services] : [];
-
-  const advance = useCallback(() => {
-    if (len === 0) return;
-    setAnimated(true);
-    setPosition(p => {
-      const next = p + 1;
-      return next;
+    const sections = ["hero", "about", "recommend", "search", "contact"];
+    const observers: IntersectionObserver[] = [];
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([e]) => { if (e.isIntersecting) setActiveSection(id); },
+        { root: containerRef.current, threshold: 0.5 }
+      );
+      obs.observe(el);
+      observers.push(obs);
     });
-  }, [len]);
-
-  // After reaching the end of middle+third copy, silently jump back
-  useEffect(() => {
-    if (len === 0) return;
-    if (position >= len * 2) {
-      const t = setTimeout(() => {
-        setAnimated(false);
-        setPosition(len);
-        setTimeout(() => setAnimated(true), 30);
-      }, 560);
-      return () => clearTimeout(t);
-    }
-  }, [position, len]);
-
-  useEffect(() => {
-    const t = setInterval(advance, 3500);
-    return () => clearInterval(t);
-  }, [advance]);
-
-  useEffect(() => {
-    const t = setInterval(() => setExampleIdx(i => (i + 1) % EXAMPLES.length), 3400);
-    return () => clearInterval(t);
+    return () => observers.forEach((o) => o.disconnect());
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-  };
-
-  const trackOffset = position * (CARD_WIDTH + SIDE_GAP);
+  const scrollTo = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    const container = containerRef.current;
+    if (!el || !container) return;
+    container.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+  }, []);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
-
+    <div
+      ref={containerRef}
+      style={{
+        height: "100vh",
+        overflowY: "scroll",
+        scrollSnapType: "y mandatory",
+        background: "var(--bg)",
+      }}
+    >
       {/* Background glow */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        {/* Top center — main purple glow */}
         <div style={{
-          position: 'absolute', width: 800, height: 800, borderRadius: '50%',
-          filter: 'blur(140px)', background: 'rgba(124,106,247,0.12)',
-          top: '-20%', left: '50%', transform: 'translateX(-50%)',
+          position: "absolute",
+          width: 900,
+          height: 700,
+          borderRadius: "50%",
+          filter: "blur(120px)",
+          background: "rgba(124,106,247,0.22)",
+          top: "-10%",
+          left: "50%",
+          transform: "translateX(-50%)",
         }} />
+        {/* Bottom right — cyan glow */}
         <div style={{
-          position: 'absolute', width: 500, height: 500, borderRadius: '50%',
-          filter: 'blur(110px)', background: 'rgba(79,195,247,0.07)',
-          bottom: '0%', right: '0%',
+          position: "absolute",
+          width: 600,
+          height: 600,
+          borderRadius: "50%",
+          filter: "blur(100px)",
+          background: "rgba(79,195,247,0.13)",
+          bottom: "-5%",
+          right: "-5%",
+        }} />
+        {/* Bottom left — deep purple */}
+        <div style={{
+          position: "absolute",
+          width: 500,
+          height: 500,
+          borderRadius: "50%",
+          filter: "blur(120px)",
+          background: "rgba(167,139,250,0.1)",
+          bottom: "20%",
+          left: "-5%",
+        }} />
+        {/* Subtle grid overlay */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
         }} />
       </div>
 
-      {/* Header */}
-      <header className="home-header" style={{
-        position: 'relative', zIndex: 10,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '28px 56px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="home-logo-icon" style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, fontWeight: 800, color: '#fff',
-          }}>△</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <span className="home-logo-name" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1.1 }}>SEMO AI</span>
-            <span className="home-logo-sub" style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.2px' }}>
-              <span style={{ color: '#a78bfa', fontWeight: 700 }}>세</span>상의 <span style={{ color: '#a78bfa', fontWeight: 700 }}>모</span>든 <span style={{ color: '#4fc3f7', fontWeight: 700 }}>AI</span>
-            </span>
-          </div>
-        </div>
-        <nav className="home-nav" style={{ display: 'flex', gap: 12, marginLeft: -60 }}>
-          {[
-            { label: 'AI 추천', href: '/search', highlight: true },
-            { label: '탐색', href: '/browse', highlight: false },
-          ].map(item => (
-            <a key={item.label} href={item.href} className="home-nav-item" style={{
-              fontSize: 15, fontWeight: 600, textDecoration: 'none',
-              padding: '9px 20px', borderRadius: 12,
-              border: item.highlight ? '1.5px solid rgba(124,106,247,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
-              background: item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.25), rgba(79,195,247,0.15))' : 'rgba(255,255,255,0.06)',
-              color: item.highlight ? '#c4b5fd' : 'rgba(255,255,255,0.8)',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.background = item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.4), rgba(79,195,247,0.25))' : 'rgba(255,255,255,0.12)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.background = item.highlight ? 'linear-gradient(135deg, rgba(124,106,247,0.25), rgba(79,195,247,0.15))' : 'rgba(255,255,255,0.06)';
-            }}>
-              {item.label}
-            </a>
-          ))}
-          {session ? (
-            <button onClick={() => signOut()} className="home-nav-item" style={{
-              fontSize: 15, fontWeight: 600, cursor: 'pointer',
-              padding: '9px 20px', borderRadius: 12,
-              border: '1.5px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >로그아웃</button>
-          ) : (
-            <a href="/login" className="home-nav-item" style={{
-              fontSize: 15, fontWeight: 600, textDecoration: 'none',
-              padding: '9px 20px', borderRadius: 12,
-              border: '1.5px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >로그인</a>
-          )}
-        </nav>
-      </header>
-
-      {/* Main */}
-      <main style={{
-        flex: 1, position: 'relative', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: sm ? 'center' : 'space-between',
-        gap: sm ? 20 : 0,
-        padding: sm ? '0 0 16px' : '12px 0 20px',
-      }}>
-
-        {/* Hero */}
-        <div className="home-hero" style={{ textAlign: 'center', marginBottom: sm ? 0 : 16, padding: sm ? '0 24px' : '0 40px' }}>
-          <h1 style={{
-            fontSize: 'clamp(32px, 5vw, 60px)',
-            fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
-            background: 'linear-gradient(135deg, #ffffff 20%, #a78bfa 60%, #4fc3f7)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            marginBottom: 10,
-          }}>
-            당신이 원하는 AI는<br />무엇인가요?
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 17 }}>
-            원하는 작업을 말해주세요. 딱 맞는 AI를 찾아드릴게요.
-          </p>
-          <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{
-              fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1,
-              background: 'linear-gradient(135deg, #a78bfa, #4fc3f7)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>4000+</span>
-            <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 500 }}>AI 서비스</span>
-          </div>
-        </div>
-
-        {/* Carousel */}
-        <div style={{
-          width: '100%', overflow: 'hidden',
-          marginBottom: sm ? 0 : 16,
-        }}>
-          {/* Track */}
-          <div style={{
-            display: 'flex',
-            gap: SIDE_GAP,
-            transform: `translateX(calc(50vw - ${CARD_WIDTH / 2}px - ${trackOffset}px))`,
-            transition: animated ? 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-            padding: '8px 0 24px',
-          }}>
-            {tripled.length > 0 ? tripled.map((s, i) => {
-              const badge = PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type, color: '#888' };
-              const isActive = i === position;
-              return (
-                <div
-                  key={`${s.id}-${i}`}
-                  onClick={() => { if (!isActive) { setAnimated(true); setPosition(i); } }}
-                  style={{
-                    flexShrink: 0,
-                    width: CARD_WIDTH,
-                    aspectRatio: '3 / 2',
-                    borderRadius: sm ? 16 : 24,
-                    padding: isActive
-                      ? (sm ? '10px 14px' : '24px 28px')
-                      : (sm ? '8px 12px'  : '18px 22px'),
-                    background: isActive
-                      ? 'linear-gradient(145deg, rgba(124,106,247,0.18), rgba(10,10,25,0.97))'
-                      : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${isActive ? 'rgba(124,106,247,0.5)' : 'rgba(255,255,255,0.07)'}`,
-                    boxShadow: isActive
-                      ? '0 24px 80px rgba(124,106,247,0.25), 0 4px 24px rgba(0,0,0,0.6)'
-                      : '0 4px 20px rgba(0,0,0,0.3)',
-                    backdropFilter: 'blur(12px)',
-                    display: 'flex', flexDirection: 'column', gap: 16,
-                    cursor: isActive ? 'default' : 'pointer',
-                    transition: 'all 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
-                    opacity: isActive ? 1 : 0.55,
-                    transform: isActive ? 'scale(1)' : 'scale(0.94)',
-                    transformOrigin: 'center center',
-                  }}>
-                  {/* Top: name centered */}
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{
-                      fontWeight: 800, fontSize: isActive ? (sm ? 15 : 28) : (sm ? 11 : 18),
-                      letterSpacing: '-0.4px', transition: 'font-size 0.4s',
-                    }}>{s.name}</span>
-                  </div>
-                  {/* Middle: big logo */}
-                  <div style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <ServiceLogo url={s.website_url} name={s.name} size={isActive ? (sm ? 56 : 130) : (sm ? 36 : 80)} />
-                  </div>
-                  {/* Bottom: tagline left + badge right */}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
-                    <p style={{
-                      fontSize: isActive ? (sm ? 10 : 15) : (sm ? 9 : 12),
-                      color: 'rgba(240,240,255,0.55)', lineHeight: 1.6,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden', flex: 1, margin: 0, paddingRight: 8,
-                    }}>{s.tagline}</p>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, padding: '2px 9px', borderRadius: 20,
-                      border: `1px solid ${badge.color}55`,
-                      color: badge.color, background: `${badge.color}18`,
-                      whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-end',
-                    }}>{badge.label}</span>
-                  </div>
-                </div>
-              );
-            }) : Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{
-                flexShrink: 0, width: CARD_WIDTH, aspectRatio: '3/2',
-                borderRadius: 28, background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border)',
-              }} />
-            ))}
-          </div>
-        </div>
-
-        {/* Search */}
-        <form onSubmit={handleSubmit} className="home-search" style={{ width: '100%', maxWidth: 760, padding: sm ? '0 20px' : '0 40px' }}>
-          <div style={{
-            position: 'relative',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid var(--border)',
-            borderRadius: sm ? 12 : 16, backdropFilter: 'blur(8px)',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
-          }}
-          onFocusCapture={e => {
-            const el = e.currentTarget as HTMLDivElement;
-            el.style.borderColor = 'rgba(124,106,247,0.7)';
-            el.style.boxShadow = '0 0 0 3px rgba(124,106,247,0.2)';
-          }}
-          onBlurCapture={e => {
-            const el = e.currentTarget as HTMLDivElement;
-            el.style.borderColor = 'var(--border)';
-            el.style.boxShadow = 'none';
-          }}>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={`예: ${EXAMPLES[exampleIdx]}`}
-              autoFocus
-              style={{
-                width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                padding: sm ? '13px 46px 13px 14px' : '22px 68px 22px 24px',
-                fontSize: sm ? 15 : 18,
-                color: 'var(--text)', fontFamily: 'inherit',
-              }}
-            />
-            <button type="submit" disabled={!input.trim()} style={{
-              position: 'absolute', right: sm ? 8 : 12, top: '50%', transform: 'translateY(-50%)',
-              width: sm ? 34 : 44, height: sm ? 34 : 44, borderRadius: sm ? 9 : 12, border: 'none',
-              cursor: input.trim() ? 'pointer' : 'default',
-              background: input.trim() ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background 0.25s',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
-          </div>
-          <p className="home-hint" style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 10 }}>
-            세상의 모든 AI 중에서 딱 맞는 것을 찾아드릴게요
-          </p>
-        </form>
-      </main>
+      <HomeHeader scrollTo={scrollTo} activeSection={activeSection} />
+      <HeroSection />
+      <AboutSection />
+      <RecommendSection scrollTo={scrollTo} />
+      <SearchSection />
+      <ContactSection />
     </div>
   );
 }
