@@ -131,7 +131,8 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
       >
         {session ? (
           <>
-            <button
+            <a
+              href="/profile"
               style={{
                 fontSize: 13,
                 fontWeight: 700,
@@ -145,6 +146,8 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
                 fontFamily: "inherit",
                 letterSpacing: "0.5px",
                 marginRight: 12,
+                textDecoration: "none",
+                display: "inline-block",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(124,106,247,0.2)";
@@ -156,7 +159,7 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
               }}
             >
               Profile
-            </button>
+            </a>
             <button
               onClick={() => signOut()}
               style={{
