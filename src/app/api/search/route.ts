@@ -5,8 +5,9 @@ import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// 런타임에 초기화 (빌드 시 env 검증 회피)
+function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 /* ── Rate Limiter (PostgreSQL-backed) ────────────────── */
 async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter?: number }> {
@@ -78,7 +79,7 @@ async function vectorSearch(conversation: ConvTurn[], topK: number): Promise<Ser
     .map(m => m.content)
     .join(' ');
 
-  const embRes = await openai.embeddings.create({
+  const embRes = await getOpenAI().embeddings.create({
     model: 'text-embedding-3-small',
     input: queryText,
   });
@@ -204,7 +205,7 @@ async function recommendWithClaude(
 
   const prompt = STEP_PROMPTS[step](convText, serviceList);
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }],
