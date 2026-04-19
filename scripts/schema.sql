@@ -33,9 +33,11 @@ CREATE TABLE IF NOT EXISTS ai_services (
   embedding vector(1536),
   -- Metadata
   is_active BOOLEAN DEFAULT TRUE,
+  is_featured BOOLEAN DEFAULT FALSE,
   view_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 
 -- Tags table
@@ -51,6 +53,26 @@ CREATE TABLE IF NOT EXISTS ai_service_tags (
   ai_service_id INTEGER REFERENCES ai_services(id) ON DELETE CASCADE,
   tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (ai_service_id, tag_id)
+);
+
+-- Conversation history (persists across devices for logged-in users)
+CREATE TABLE IF NOT EXISTS conversations (
+  id VARCHAR(50) PRIMARY KEY,
+  user_id UUID NOT NULL,
+  title VARCHAR(200),
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id, updated_at DESC);
+
+-- Rate limiting table (persists across server restarts)
+CREATE TABLE IF NOT EXISTS rate_limits (
+  ip VARCHAR(45) PRIMARY KEY,
+  minute_count INTEGER DEFAULT 0,
+  minute_reset TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 minute',
+  day_count INTEGER DEFAULT 0,
+  day_reset TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 day'
 );
 
 -- Indexes for fast filtering
