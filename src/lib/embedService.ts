@@ -1,8 +1,6 @@
 import OpenAI from 'openai';
 import pool from '@/lib/db';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 function buildText(row: {
   name: string;
   tagline: string | null;
@@ -23,6 +21,7 @@ function buildText(row: {
 
 /** 서비스 추가/수정 후 임베딩 재생성 (백그라운드) */
 export async function reembedService(serviceId: number): Promise<void> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   try {
     const { rows } = await pool.query(`
       SELECT s.name, s.tagline, s.key_features, s.target_user, s.skill_level,
