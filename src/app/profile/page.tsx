@@ -2,360 +2,288 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
-interface UserInfo {
-  provider: string;
-  created_at: string;
+interface UserInfo { provider: string; created_at: string; }
+interface ConvMeta { id: string; title: string; createdAt: number; categories?: string[]; }
+interface RecentService { slug: string; name: string; category: string; viewedAt: number; }
+
+function timeAgo(ts: number) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return "방금";
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  const d = Math.floor(h / 24);
+  return d < 30 ? `${d}일 전` : new Date(ts).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [conversations, setConversations] = useState<ConvMeta[]>([]);
+  const [recentServices, setRecentServices] = useState<RecentService[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
-  }, [status, router]);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { if (status === "unauthenticated") router.push("/login"); }, [status, router]);
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetch("/api/user").then((r) => r.json()).then(setUserInfo);
+      fetch("/api/user").then(r => r.ok ? r.json() : null).then(d => { if (d) setUserInfo(d); }).catch(() => {});
     }
   }, [session]);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const saved = localStorage.getItem("semo_user_name");
+    if (saved) setCustomName(saved);
+    try {
+      const convs: ConvMeta[] = JSON.parse(localStorage.getItem("semo_conversations") || "[]");
+      setConversations(convs.map(c => {
+        try { const d = JSON.parse(localStorage.getItem(`semo_conv_${c.id}`) || "null"); return { ...c, categories: d?.categories || [] }; }
+        catch { return c; }
+      }));
+    } catch {}
+    try { setRecentServices(JSON.parse(localStorage.getItem("semo_recent") || "[]")); } catch {}
+  }, [mounted]);
+
+  const deleteConv = (id: string) => {
+    localStorage.removeItem(`semo_conv_${id}`);
+    const updated = conversations.filter(c => c.id !== id);
+    setConversations(updated);
+    localStorage.setItem("semo_conversations", JSON.stringify(updated));
+  };
+
   if (!mounted || status === "loading" || !session) return null;
 
-  const name = session.user?.name || "사용자";
+  const sessionName = session.user?.name || "사용자";
+  const name = customName || sessionName;
   const email = session.user?.email || "";
-  const image = session.user?.image;
   const initials = name.charAt(0).toUpperCase();
 
-  const providerLabel =
-    userInfo?.provider === "google"
-      ? "Google"
-      : userInfo?.provider === "kakao"
-      ? "카카오"
-      : userInfo?.provider || "";
+  const saveName = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setCustomName(trimmed);
+    localStorage.setItem("semo_user_name", trimmed);
+    setEditingName(false);
+  };
+  const providerLabel = userInfo?.provider === "google" ? "Google" : userInfo?.provider === "kakao" ? "카카오" : userInfo?.provider || "";
+  const joinedDate = userInfo?.created_at ? new Date(userInfo.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" }) : "—";
+  const dayCount = userInfo?.created_at ? Math.floor((Date.now() - new Date(userInfo.created_at).getTime()) / 86400000) : null;
 
-  const providerColor =
-    userInfo?.provider === "google" ? "#4285F4" : "#FEE500";
-  const providerTextColor =
-    userInfo?.provider === "kakao" ? "#191919" : "#fff";
+  const cardStyle: React.CSSProperties = {
+    background: "rgba(18,12,48,0.55)",
+    border: "1px solid rgba(124,106,247,0.15)",
+    borderRadius: 18,
+    backdropFilter: "blur(14px)",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  };
 
-  const joinedDate = userInfo?.created_at
-    ? new Date(userInfo.created_at).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "—";
+  const sectionHeaderStyle: React.CSSProperties = {
+    padding: "16px 20px 14px",
+    borderBottom: "1px solid rgba(124,106,247,0.1)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexShrink: 0,
+  };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--bg)",
-        color: "var(--text)",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        position: "relative",
-        overflowX: "hidden",
-      }}
-    >
-      {/* Background glows */}
+    <div style={{
+      height: "100vh", display: "flex", flexDirection: "column",
+      background: "var(--bg)", color: "var(--text)",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      overflow: "hidden",
+    }}>
+      {/* Background */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{
-          position: "absolute", width: 700, height: 700, borderRadius: "50%",
-          filter: "blur(120px)", background: "rgba(124,106,247,0.18)",
-          top: "-15%", left: "50%", transform: "translateX(-50%)",
-        }} />
-        <div style={{
-          position: "absolute", width: 400, height: 400, borderRadius: "50%",
-          filter: "blur(100px)", background: "rgba(79,195,247,0.1)",
-          bottom: "-5%", right: "-5%",
-        }} />
-        <div style={{
-          position: "absolute", width: 350, height: 350, borderRadius: "50%",
-          filter: "blur(120px)", background: "rgba(167,139,250,0.08)",
-          bottom: "20%", left: "-5%",
-        }} />
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }} />
+        <div style={{ position: "absolute", width: 600, height: 500, borderRadius: "50%", filter: "blur(120px)", background: "rgba(124,106,247,0.13)", top: "-10%", left: "35%" }} />
+        <div style={{ position: "absolute", width: 350, height: 350, borderRadius: "50%", filter: "blur(100px)", background: "rgba(79,195,247,0.08)", bottom: "5%", right: "10%" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(124,106,247,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.03) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
       </div>
 
       {/* Header */}
       <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "18px 48px",
+        padding: "0 40px", height: 86,
+        background: "transparent",
+        borderBottom: "1px solid rgba(124,106,247,0.1)",
       }}>
-        <button
-          onClick={() => router.push("/")}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "none", border: "none", cursor: "pointer",
-            color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: 600,
-            fontFamily: "inherit", transition: "color 0.2s",
-            padding: "6px 0",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
+        <button onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: 7, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 16, fontWeight: 600, fontFamily: "inherit", transition: "color 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.color = "#fff"}
+          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
           홈으로
         </button>
-
-        {/* Logo */}
-        <div
-          onClick={() => router.push("/")}
-          style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
-        >
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-            <defs>
-              <linearGradient id="lgProfile" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#a78bfa" />
-                <stop offset="100%" stopColor="#4fc3f7" />
-              </linearGradient>
-            </defs>
-            <polygon points="14,3 26,24 2,24" stroke="url(#lgProfile)" strokeWidth="2" strokeLinejoin="round" fill="none" />
-          </svg>
-          <span style={{
-            fontSize: 15, fontWeight: 800, letterSpacing: "2px",
-            background: "linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>SEMO AI</span>
-        </div>
-
+        <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "2px", background: "linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>프로필</span>
         <div style={{ width: 80 }} />
       </header>
 
-      {/* Main content */}
-      <main style={{
-        position: "relative", zIndex: 1,
-        display: "flex", flexDirection: "column", alignItems: "center",
-        padding: "120px 24px 80px",
-        minHeight: "100vh",
-      }}>
+      {/* Dashboard grid */}
+      <div style={{ flex: 1, position: "relative", zIndex: 1, display: "grid", gridTemplateRows: "auto 1fr", gap: 10, padding: "12px 16px 14px", overflow: "hidden" }}>
 
-        {/* Profile card */}
-        <div
-          style={{
-            width: "100%", maxWidth: 520,
-            background: "rgba(18, 12, 48, 0.6)",
-            border: "1px solid rgba(124,106,247,0.2)",
-            borderRadius: 28,
-            backdropFilter: "blur(20px)",
-            overflow: "hidden",
-            boxShadow: "0 0 0 1px rgba(124,106,247,0.08), 0 32px 80px rgba(0,0,0,0.4)",
-            animation: "fadeSlide 0.5s cubic-bezier(0.4,0,0.2,1) both",
-          }}
-        >
-          {/* Card top gradient band */}
-          <div style={{
-            height: 6,
-            background: "linear-gradient(90deg, #7c6af7, #a78bfa, #4fc3f7)",
-          }} />
-
-          {/* Avatar + name section */}
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "40px 40px 32px",
-            borderBottom: "1px solid rgba(124,106,247,0.1)",
-          }}>
-            {/* Avatar */}
-            <div style={{ position: "relative", marginBottom: 20 }}>
-              {image ? (
-                <img
-                  src={image}
-                  alt={name}
-                  style={{
-                    width: 96, height: 96, borderRadius: "50%",
-                    border: "3px solid rgba(124,106,247,0.4)",
-                    boxShadow: "0 0 32px rgba(124,106,247,0.3)",
-                  }}
-                />
+        {/* Row 1: Profile strip */}
+        <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 24, padding: "22px 28px", flexShrink: 0 }}>
+          {/* Name + email */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+              {editingName ? (
+                <>
+                  <input
+                    ref={nameInputRef}
+                    autoFocus
+                    defaultValue={name}
+                    onKeyDown={e => { if (e.key === "Enter") saveName(e.currentTarget.value); if (e.key === "Escape") setEditingName(false); }}
+                    style={{ fontSize: 15, fontWeight: 700, background: "rgba(124,106,247,0.12)", border: "1px solid rgba(124,106,247,0.4)", borderRadius: 7, padding: "3px 10px", color: "#e2d9f3", outline: "none", fontFamily: "inherit", width: 140 }}
+                  />
+                  <button onClick={() => saveName(nameInputRef.current?.value || name)} style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, border: "none", background: "rgba(124,106,247,0.25)", color: "#c4b5fd", cursor: "pointer", fontFamily: "inherit" }}>저장</button>
+                  <button onClick={() => setEditingName(false)} style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, border: "none", background: "transparent", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontFamily: "inherit" }}>취소</button>
+                </>
               ) : (
-                <div style={{
-                  width: 96, height: 96, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7c6af7, #4fc3f7)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 36, fontWeight: 900, color: "#fff",
-                  border: "3px solid rgba(124,106,247,0.4)",
-                  boxShadow: "0 0 32px rgba(124,106,247,0.3)",
-                }}>
-                  {initials}
-                </div>
+                <>
+                  <span style={{ fontSize: 22, fontWeight: 800, background: "linear-gradient(135deg, #fff 30%, #e0d7ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{name}</span>
+                  <button onClick={() => setEditingName(true)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid rgba(124,106,247,0.35)", background: "rgba(124,106,247,0.1)", color: "#a78bfa", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(124,106,247,0.22)"; e.currentTarget.style.borderColor = "rgba(124,106,247,0.6)"; e.currentTarget.style.color = "#c4b5fd"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(124,106,247,0.1)"; e.currentTarget.style.borderColor = "rgba(124,106,247,0.35)"; e.currentTarget.style.color = "#a78bfa"; }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </>
               )}
-              {/* Online badge */}
-              <div style={{
-                position: "absolute", bottom: 4, right: 4,
-                width: 16, height: 16, borderRadius: "50%",
-                background: "#22c55e",
-                border: "2.5px solid var(--bg)",
-                boxShadow: "0 0 8px rgba(34,197,94,0.6)",
-              }} />
             </div>
-
-            {/* Name */}
-            <h1 style={{
-              fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px",
-              marginBottom: 6, textAlign: "center",
-              background: "linear-gradient(135deg, #fff 30%, #e0d7ff)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>{name}</h1>
-
-            {/* Email */}
-            <p style={{
-              fontSize: 14, color: "var(--text-muted)",
-              marginBottom: 14, letterSpacing: "0.2px",
-            }}>{email}</p>
-
-            {/* Provider badge */}
-            {providerLabel && (
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "5px 14px", borderRadius: 100,
-                background: providerColor,
-                color: providerTextColor,
-                fontSize: 12, fontWeight: 700, letterSpacing: "0.3px",
-              }}>
-                {userInfo?.provider === "google" && (
-                  <svg width="13" height="13" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                )}
-                {userInfo?.provider === "kakao" && (
-                  <svg width="13" height="13" viewBox="0 0 512 512">
-                    <path d="M255.5 48C149.3 48 64 115.1 64 198.4c0 50.9 32.2 95.7 81.5 122.7l-20.8 77.7c-1.8 6.8 5.4 12.3 11.4 8.5l91.3-61c9.5 1.1 19.2 1.7 29.1 1.7 106.2 0 191.5-67.1 191.5-150.6C448 115.1 361.7 48 255.5 48z" fill="#191919"/>
-                  </svg>
-                )}
-                {providerLabel} 로그인
-              </div>
-            )}
+            <div style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 4 }}>{email}</div>
           </div>
 
-          {/* Info grid */}
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr",
-            gap: 1, background: "rgba(124,106,247,0.1)",
-            borderBottom: "1px solid rgba(124,106,247,0.1)",
-          }}>
+          {/* Stats */}
+          <div style={{ display: "flex", gap: 24, marginLeft: "auto" }}>
             {[
-              { label: "가입일", value: joinedDate, icon: "📅" },
-              { label: "로그인 방식", value: providerLabel || "—", icon: "🔑" },
-            ].map((item) => (
-              <div key={item.label} style={{
-                background: "rgba(18, 12, 48, 0.6)",
-                padding: "20px 24px",
-                backdropFilter: "blur(8px)",
-              }}>
-                <div style={{ fontSize: 18, marginBottom: 8 }}>{item.icon}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 6 }}>
-                  {item.label}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#e0d7ff" }}>
-                  {item.value}
-                </div>
+              { value: conversations.length, label: "추천 기록" },
+              { value: recentServices.length, label: "최근 본 서비스" },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #4fc3f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 5 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Quick actions */}
-          <div style={{ padding: "28px 32px 32px", display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>
-              바로가기
-            </p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <a href="/search" style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "14px 16px", borderRadius: 14,
-                background: "rgba(124,106,247,0.08)",
-                border: "1px solid rgba(124,106,247,0.2)",
-                textDecoration: "none", color: "#c4b5fd",
-                fontSize: 14, fontWeight: 600,
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(124,106,247,0.16)";
-                e.currentTarget.style.borderColor = "rgba(124,106,247,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(124,106,247,0.08)";
-                e.currentTarget.style.borderColor = "rgba(124,106,247,0.2)";
-              }}
-              >
-                <span style={{ fontSize: 18 }}>🔍</span>
-                AI 탐색
-              </a>
-
-              <a href="/recommend" style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "14px 16px", borderRadius: 14,
-                background: "rgba(79,195,247,0.08)",
-                border: "1px solid rgba(79,195,247,0.2)",
-                textDecoration: "none", color: "#93e8ff",
-                fontSize: 14, fontWeight: 600,
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(79,195,247,0.15)";
-                e.currentTarget.style.borderColor = "rgba(79,195,247,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(79,195,247,0.08)";
-                e.currentTarget.style.borderColor = "rgba(79,195,247,0.2)";
-              }}
-              >
-                <span style={{ fontSize: 18 }}>✨</span>
-                AI 추천
-              </a>
-            </div>
-
-            {/* Logout */}
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              style={{
-                marginTop: 8,
-                width: "100%", padding: "13px", borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.1)",
-                background: "rgba(255,255,255,0.04)",
-                color: "rgba(255,255,255,0.5)",
-                fontSize: 14, fontWeight: 600,
-                cursor: "pointer", fontFamily: "inherit",
-                transition: "all 0.2s",
-                letterSpacing: "0.3px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-                e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)";
-                e.currentTarget.style.color = "#fca5a5";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.5)";
-              }}
-            >
-              로그아웃
-            </button>
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <a href="/recommend" style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "rgba(124,106,247,0.12)", border: "1px solid rgba(124,106,247,0.25)", color: "#c4b5fd", textDecoration: "none", transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,247,0.22)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(124,106,247,0.12)"}>AI 추천</a>
+            <a href="/search" style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "rgba(79,195,247,0.09)", border: "1px solid rgba(79,195,247,0.22)", color: "#93e8ff", textDecoration: "none", transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(79,195,247,0.18)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(79,195,247,0.09)"}>AI 탐색</a>
+            <button onClick={() => signOut({ callbackUrl: "/" })} style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)"; e.currentTarget.style.color = "#fca5a5"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}>로그아웃</button>
           </div>
         </div>
-      </main>
+
+        {/* Row 2: main content panels */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, overflow: "hidden", minHeight: 0 }}>
+
+          {/* AI 추천 기록 */}
+          <div style={{ ...cardStyle }}>
+            <div style={sectionHeaderStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 18 }}>✨</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#e2d9f3" }}>AI 추천 기록</span>
+              </div>
+              {conversations.length > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(124,106,247,0.2)", color: "#c4b5fd", padding: "2px 8px", borderRadius: 100 }}>{conversations.length}</span>
+              )}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
+              {conversations.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", textAlign: "center", gap: 10 }}>
+                  <span style={{ fontSize: 28 }}>✨</span>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#e2d9f3" }}>아직 추천 기록이 없어요</p>
+                  <a href="/recommend" style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", textDecoration: "none", padding: "6px 14px", borderRadius: 8, background: "rgba(124,106,247,0.12)", border: "1px solid rgba(124,106,247,0.25)" }}>AI 추천 받기</a>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {conversations.map(conv => (
+                    <div key={conv.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 11, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(124,106,247,0.1)", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(124,106,247,0.07)"; e.currentTarget.style.borderColor = "rgba(124,106,247,0.25)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(124,106,247,0.1)"; }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(124,106,247,0.15)", border: "1px solid rgba(124,106,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>✨</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e2d9f3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>{conv.title || "대화"}</div>
+                        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(conv.createdAt)}</span>
+                          {(conv.categories || []).slice(0, 2).map(cat => (
+                            <span key={cat} style={{ fontSize: 10, color: "#93e8ff", background: "rgba(79,195,247,0.1)", borderRadius: 3, padding: "0px 5px" }}>{cat}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <a href={`/recommend?conv=${conv.id}`} style={{ fontSize: 11, fontWeight: 700, color: "#c4b5fd", textDecoration: "none", padding: "4px 10px", borderRadius: 7, background: "rgba(124,106,247,0.1)", border: "1px solid rgba(124,106,247,0.2)", flexShrink: 0, transition: "background 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,247,0.2)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "rgba(124,106,247,0.1)"}>이어보기</a>
+                      <button onClick={() => deleteConv(conv.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#fca5a5"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.2)"; }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right column: 최근 본 서비스 */}
+          <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+
+            {/* 최근 본 서비스 */}
+            <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
+              <div style={sectionHeaderStyle}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>🔍</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "#e2d9f3" }}>최근 본 서비스</span>
+                </div>
+                {recentServices.length > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(79,195,247,0.15)", color: "#93e8ff", padding: "2px 8px", borderRadius: 100 }}>{recentServices.length}</span>
+                )}
+              </div>
+              <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
+                {recentServices.length === 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", textAlign: "center", gap: 10 }}>
+                    <span style={{ fontSize: 26 }}>🔍</span>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#e2d9f3" }}>최근 본 서비스가 없어요</p>
+                    <a href="/search" style={{ fontSize: 12, fontWeight: 700, color: "#93e8ff", textDecoration: "none", padding: "5px 12px", borderRadius: 8, background: "rgba(79,195,247,0.09)", border: "1px solid rgba(79,195,247,0.22)" }}>탐색하기</a>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {recentServices.map(svc => (
+                      <a key={svc.slug} href={`/service/${svc.slug}`} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(124,106,247,0.1)", transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(124,106,247,0.28)"; e.currentTarget.style.background = "rgba(124,106,247,0.06)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(124,106,247,0.1)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e2d9f3", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 10, color: "#93e8ff", background: "rgba(79,195,247,0.1)", borderRadius: 3, padding: "0px 5px" }}>{svc.category}</span>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{timeAgo(svc.viewedAt)}</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

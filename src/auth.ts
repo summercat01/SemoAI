@@ -12,6 +12,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Kakao({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: String(profile.id),
+          name: profile.kakao_account?.profile?.nickname ?? null,
+          email: profile.kakao_account?.email ?? null,
+          image: null,
+        };
+      },
     }),
   ],
   session: { strategy: 'jwt' },
