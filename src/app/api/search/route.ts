@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import pool from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
