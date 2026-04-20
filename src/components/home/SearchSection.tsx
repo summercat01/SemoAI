@@ -202,7 +202,7 @@ export default function SearchSection() {
       </div>
 
       {/* Orbit system */}
-      <div style={{ position: "absolute", inset: 0, opacity: visible ? 1 : 0, transition: "opacity 0.8s 0.3s" }}>
+      <div className="orbit-system" style={{ position: "absolute", inset: 0, opacity: visible ? 1 : 0, transition: "opacity 0.8s 0.3s" }}>
         {mounted && (
           <>
             {/* Main orbit — pivot at bottom edge, arc sweeps through screen center */}

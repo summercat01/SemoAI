@@ -33,6 +33,7 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
 
   return (
     <header
+      className="home-header"
       style={{
         position: "fixed",
         top: 0,
@@ -67,7 +68,7 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
             fill="none"
           />
         </svg>
-        <span style={{
+        <span className="home-logo-name" style={{
           fontSize: 17,
           fontWeight: 800,
           letterSpacing: "2px",
@@ -80,11 +81,12 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
       </div>
 
       {/* Center: Nav */}
-      <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <nav className="home-nav" style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
           return (
             <button
+              className="home-nav-item"
               key={item.id}
               onClick={() => scrollTo(item.id)}
               style={{
@@ -122,6 +124,7 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
 
       {/* Right: Auth */}
       <div
+        className="home-auth-area"
         style={{
           display: "flex",
           alignItems: "center",

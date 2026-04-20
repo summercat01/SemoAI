@@ -97,7 +97,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div style={{
+    <div className="profile-page-root" style={{
       height: "100vh", display: "flex", flexDirection: "column",
       background: "var(--bg)", color: "var(--text)",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
