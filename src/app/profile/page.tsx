@@ -111,7 +111,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Header */}
-      <header style={{
+      <header className="profile-header" style={{
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 40px", height: 86,
@@ -129,10 +129,10 @@ export default function ProfilePage() {
       </header>
 
       {/* Dashboard grid */}
-      <div style={{ flex: 1, position: "relative", zIndex: 1, display: "grid", gridTemplateRows: "auto 1fr", gap: 10, padding: "12px 16px 14px", overflow: "hidden" }}>
+      <div className="profile-dashboard" style={{ flex: 1, position: "relative", zIndex: 1, display: "grid", gridTemplateRows: "auto 1fr", gap: 10, padding: "12px 16px 14px", overflow: "hidden" }}>
 
         {/* Row 1: Profile strip */}
-        <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 24, padding: "22px 28px", flexShrink: 0 }}>
+        <div className="profile-strip" style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 24, padding: "22px 28px", flexShrink: 0 }}>
           {/* Name + email */}
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: "flex", gap: 24, marginLeft: "auto" }}>
+          <div className="profile-strip-stats" style={{ display: "flex", gap: 24, marginLeft: "auto" }}>
             {[
               { value: conversations.length, label: "추천 기록" },
               { value: recentServices.length, label: "최근 본 서비스" },
@@ -176,7 +176,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Actions */}
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <div className="profile-strip-actions" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <a href="/recommend" style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "rgba(124,106,247,0.12)", border: "1px solid rgba(124,106,247,0.25)", color: "#c4b5fd", textDecoration: "none", transition: "background 0.2s" }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,247,0.22)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(124,106,247,0.12)"}>AI 추천</a>
@@ -190,7 +190,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Row 2: main content panels */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, overflow: "hidden", minHeight: 0 }}>
+        <div className="profile-panels" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, overflow: "hidden", minHeight: 0 }}>
 
           {/* AI 추천 기록 */}
           <div style={{ ...cardStyle }}>
@@ -263,7 +263,7 @@ export default function ProfilePage() {
                     <a href="/search" style={{ fontSize: 12, fontWeight: 700, color: "#93e8ff", textDecoration: "none", padding: "5px 12px", borderRadius: 8, background: "rgba(79,195,247,0.09)", border: "1px solid rgba(79,195,247,0.22)" }}>탐색하기</a>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  <div className="profile-recent-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                     {recentServices.map(svc => (
                       <a key={svc.slug} href={`/service/${svc.slug}`} style={{ display: "block", padding: "10px 12px", borderRadius: 10, textDecoration: "none", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(124,106,247,0.1)", transition: "all 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(124,106,247,0.28)"; e.currentTarget.style.background = "rgba(124,106,247,0.06)"; }}

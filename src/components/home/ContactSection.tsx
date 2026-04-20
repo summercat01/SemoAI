@@ -59,7 +59,7 @@ export default function ContactSection() {
         transition: "opacity 0.6s ease, transform 0.6s ease",
       }}>
         {/* Left: 문의하기 */}
-        <div style={{
+        <div className="contact-card-inner" style={{
           ...cardBase,
           background: "rgba(124,106,247,0.04)",
           borderRight: "1px solid rgba(255,255,255,0.07)",
@@ -146,7 +146,7 @@ export default function ContactSection() {
         </div>
 
         {/* Right: 제보하기 */}
-        <div style={{
+        <div className="contact-card-inner" style={{
           ...cardBase,
           background: "rgba(79,195,247,0.03)",
         }}>
@@ -235,7 +235,7 @@ export default function ContactSection() {
         position: "relative", zIndex: 1,
         background: "rgba(0,0,0,0.15)",
       }}>
-        <div style={{ display: "flex", gap: 48, justifyContent: "space-between", marginBottom: 24 }}>
+        <div className="contact-grid" style={{ display: "flex", gap: 48, justifyContent: "space-between", marginBottom: 24 }}>
           {/* Brand */}
           <div style={{ minWidth: 180 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>

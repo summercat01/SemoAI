@@ -81,6 +81,7 @@ export default function RecommendSection({ scrollTo }: RecommendSectionProps) {
     <section
       ref={sectionRef}
       id="recommend"
+      className="home-section-grid"
       style={{
         position: "relative", zIndex: 1,
         height: "100vh", scrollSnapAlign: "start",
@@ -91,7 +92,7 @@ export default function RecommendSection({ scrollTo }: RecommendSectionProps) {
       }}
     >
       {/* Left */}
-      <div style={{
+      <div className="home-section-left" style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateX(0)" : "translateX(-48px)",
         transition: "opacity 0.7s, transform 0.7s",

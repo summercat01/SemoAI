@@ -501,7 +501,7 @@ export default function AdminPage() {
       )}
 
       {/* Header */}
-      <div style={{ padding: '20px 32px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="admin-header" style={{ padding: '20px 32px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 16 }}>
         <a href="/" style={{ color: '#7c6af7', textDecoration: 'none', fontSize: 14 }}>← 세모 AI</a>
         <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
         <span style={{ fontWeight: 700 }}>서비스 데이터 관리</span>
@@ -516,10 +516,10 @@ export default function AdminPage() {
         }}>+ 서비스 추가</button>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 32px' }}>
+      <div className="admin-content" style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 32px' }}>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+        <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
           {[
             { label: '전체 서비스', value: stats.total, color: '#7c6af7' },
             { label: '완성도 100%', value: services.filter(s => completeness(s) === 100).length, color: '#22c55e' },
@@ -534,7 +534,7 @@ export default function AdminPage() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div className="admin-filters" style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <input
             value={search}
             onChange={e => handleSearch(e.target.value)}
@@ -561,14 +561,14 @@ export default function AdminPage() {
 
         {/* Table */}
         <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-          <div style={{
+          <div className="admin-table-header" style={{
             display: 'grid', gridTemplateColumns: '2fr 1fr 100px 80px 60px 120px 80px',
             padding: '12px 20px', background: 'rgba(255,255,255,0.03)',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             fontSize: 12, fontWeight: 600, color: 'rgba(240,240,255,0.45)',
           }}>
-            <div>서비스명</div><div>카테고리</div><div>가격</div>
-            <div>완성도</div><div>추천</div><div>웹사이트</div><div>관리</div>
+            <div>서비스명</div><div className="admin-col-category">카테고리</div><div>가격</div>
+            <div>완성도</div><div className="admin-col-featured">추천</div><div className="admin-col-website">웹사이트</div><div>관리</div>
           </div>
 
           {paginated.map(s => {
@@ -577,6 +577,7 @@ export default function AdminPage() {
             return (
               <div key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div
+                  className="admin-table-row"
                   onClick={() => setExpanded(isOpen ? null : s.id)}
                   style={{
                     display: 'grid', gridTemplateColumns: '2fr 1fr 100px 80px 60px 120px 80px',
@@ -592,7 +593,7 @@ export default function AdminPage() {
                       {s.tagline || <span style={{ color: '#f97316' }}>한줄 설명 없음</span>}
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(240,240,255,0.6)' }}>
+                  <div className="admin-col-category" style={{ fontSize: 13, color: 'rgba(240,240,255,0.6)' }}>
                     {s.category_name || <span style={{ color: '#f97316' }}>미분류</span>}
                   </div>
                   <div>
@@ -614,8 +615,8 @@ export default function AdminPage() {
                     </div>
                     <span style={{ fontSize: 11, color: pct < 60 ? '#f97316' : 'rgba(240,240,255,0.5)', minWidth: 30 }}>{pct}%</span>
                   </div>
-                  <div style={{ textAlign: 'center', fontSize: 16 }}>{s.is_featured ? '⭐' : ''}</div>
-                  <div>
+                  <div className="admin-col-featured" style={{ textAlign: 'center', fontSize: 16 }}>{s.is_featured ? '⭐' : ''}</div>
+                  <div className="admin-col-website">
                     <a href={s.website_url} target="_blank" rel="noopener noreferrer"
                       onClick={e => e.stopPropagation()}
                       style={{ fontSize: 12, color: '#7c6af7', textDecoration: 'none', wordBreak: 'break-all' }}>

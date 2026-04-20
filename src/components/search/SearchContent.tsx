@@ -104,7 +104,7 @@ function PaginatedResults({
         flex: '1 1 0', minHeight: 0, maxHeight: 'calc(100% - 64px)', position: 'relative',
         display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridAutoRows: '1fr', gap: 8,
         opacity: loading ? 0.35 : 1, transition: 'opacity 0.2s',
-      }}>
+      }} className="search-result-grid">
         {cards.map(r => <SearchResultCard key={r.id} r={r} />)}
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -366,7 +366,7 @@ export default function SearchContent() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
 
         {/* LEFT: Chat */}
-        <div style={{
+        <div className="search-chat-panel" style={{
           width: (hasResult || searching) ? 480 : '100%', flexShrink: 0,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           borderRight: (hasResult || searching) ? '1px solid rgba(124,106,247,0.15)' : 'none',
@@ -512,7 +512,7 @@ export default function SearchContent() {
 
         {/* RIGHT: Results */}
         {(hasResult || searching) && (
-          <div style={{
+          <div className={`search-results-panel${hasResult ? ' has-result' : ''}`} style={{
             flex: 1, overflow: 'hidden', padding: '24px 24px 16px',
             borderLeft: '1px solid rgba(124,106,247,0.15)',
             display: 'flex', flexDirection: 'column',
@@ -553,7 +553,7 @@ export default function SearchContent() {
                 {recommendations.length > 0 && (
                   step === 3 ? (
                     /* Step 3: 최종 추천 — 페이지네이션 없이 카드만 표시 */
-                    <div style={{
+                    <div className="search-result-grid" style={{
                       flex: 1, overflow: 'auto',
                       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridAutoRows: '1fr',
                       gap: 10, alignContent: 'start',
@@ -571,7 +571,7 @@ export default function SearchContent() {
                         categories={categories}
                       />
                     ) : (
-                      <div style={{
+                      <div className="search-result-grid" style={{
                         flex: 1, overflow: 'auto',
                         display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridAutoRows: '1fr',
                         gap: 8,

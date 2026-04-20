@@ -22,6 +22,7 @@ export default function AboutSection() {
     <section
       ref={aboutRef}
       id="about"
+      className="home-section-grid"
       style={{
         position: "relative",
         zIndex: 1,
@@ -83,7 +84,7 @@ export default function AboutSection() {
 
       {/* Left: text + stats */}
       <div
-        className={aboutVisible ? "about-left-enter" : ""}
+        className={`home-section-left ${aboutVisible ? "about-left-enter" : ""}`}
         style={{ opacity: aboutVisible ? undefined : 0, paddingLeft: 100 }}
       >
         {/* Section label */}
@@ -147,7 +148,7 @@ export default function AboutSection() {
         </div>
 
         {/* Stat cards */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 36, maxWidth: 420 }}>
+        <div className="home-stat-cards" style={{ display: "flex", gap: 12, marginBottom: 36, maxWidth: 420 }}>
           {[
             { value: "4,000+", label: "AI 서비스" },
             { value: "AI",     label: "기반 추천"  },
@@ -194,7 +195,7 @@ export default function AboutSection() {
 
       {/* Right: device mockup */}
       <div
-        className={aboutVisible ? "about-right-enter" : ""}
+        className={`about-mockup-area ${aboutVisible ? "about-right-enter" : ""}`}
         style={{
           position: "relative",
           height: 560,
@@ -203,6 +204,7 @@ export default function AboutSection() {
       >
         {/* Laptop */}
         <div
+          className="about-laptop"
           style={{
             position: "absolute",
             left: "50%",
@@ -259,6 +261,7 @@ export default function AboutSection() {
 
         {/* Phone */}
         <div
+          className="about-phone"
           style={{
             position: "absolute",
             right: "10%",
