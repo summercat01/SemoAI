@@ -276,10 +276,13 @@ html, body {
   .home-snap-container {
     scroll-snap-type: none !important;
   }
-  #hero, #search {
+  #hero {
     scroll-snap-align: none !important;
-    height: auto !important;
-    min-height: 100vh !important;
+  }
+  #search {
+    scroll-snap-align: none !important;
+    height: 70vh !important;
+    min-height: 480px !important;
   }
 }
 
@@ -309,11 +312,34 @@ html, body {
 
 /* Search orbit section */
 @media (max-width: 768px) {
-  #search .orbit-system { transform: scale(0.6) !important; }
+  #search {
+    height: 60vh !important;
+    min-height: 420px !important;
+  }
+  #search .orbit-system { transform: scale(0.55) !important; }
   #search > div:nth-child(1) { padding-top: 60px !important; }
+  #search .search-cta { bottom: 24px !important; }
+  #search .search-cta a {
+    padding: 12px 36px !important;
+    font-size: 16px !important;
+    letter-spacing: 1px !important;
+  }
 }
 @media (max-width: 480px) {
-  #search .orbit-system { transform: scale(0.45) !important; }
+  #search {
+    height: 55vh !important;
+    min-height: 380px !important;
+  }
+  #search .orbit-system { transform: scale(0.4) !important; }
+  #search > div:nth-child(1) { padding-top: 50px !important; }
+  #search > div:nth-child(1) p { font-size: 16px !important; letter-spacing: 4px !important; }
+  #search .search-cta { bottom: 16px !important; }
+  #search .search-cta a {
+    padding: 10px 28px !important;
+    font-size: 14px !important;
+    gap: 10px !important;
+  }
+  #search .search-cta a span { width: 20px !important; }
 }
 
 /* Browse */

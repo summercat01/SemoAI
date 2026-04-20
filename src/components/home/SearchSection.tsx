@@ -266,7 +266,7 @@ export default function SearchSection() {
       ))}
 
       {/* Bottom CTA */}
-      <div style={{
+      <div className="search-cta" style={{
         position: "absolute", bottom: 48,
         display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
         opacity: visible ? 1 : 0, transition: "opacity 0.6s 0.8s", zIndex: 2,
