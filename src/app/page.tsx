@@ -51,6 +51,7 @@ export default function Home() {
   return (
     <div
       ref={containerRef}
+      className="home-snap-container"
       style={{
         height: "100vh",
         overflowY: "scroll",
