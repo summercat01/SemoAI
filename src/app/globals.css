@@ -320,7 +320,7 @@ html, body {
     height: 60vh !important;
     min-height: 420px !important;
   }
-  #search .orbit-system { transform: scale(0.7) !important; }
+  #search .orbit-system { transform: scale(0.7) !important; top: 15% !important; }
   #search > div:nth-child(1) { padding-top: 40px !important; }
   #search .search-cta { bottom: 20px !important; }
   #search .search-cta a {
@@ -334,7 +334,7 @@ html, body {
     height: 55vh !important;
     min-height: 380px !important;
   }
-  #search .orbit-system { transform: scale(0.55) !important; }
+  #search .orbit-system { transform: scale(0.55) !important; top: 12% !important; }
   #search > div:nth-child(1) { padding-top: 32px !important; }
   #search > div:nth-child(1) p { font-size: 16px !important; letter-spacing: 4px !important; }
   #search .search-cta { bottom: 14px !important; }
