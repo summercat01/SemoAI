@@ -3,16 +3,21 @@ import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { rows } = await pool.query(
+      "SELECT provider, created_at FROM users WHERE id = $1",
+      [session.user.id]
+    );
+
+    if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ data: rows[0] });
+  } catch (error) {
+    console.error('User GET error:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
-
-  const { rows } = await pool.query(
-    "SELECT provider, created_at FROM users WHERE id = $1",
-    [session.user.id]
-  );
-
-  if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(rows[0]);
 }

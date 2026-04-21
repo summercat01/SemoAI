@@ -31,7 +31,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    return NextResponse.json(rows[0]);
+    return NextResponse.json({ data: rows[0] });
   } catch (error) {
     console.error('Service detail error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

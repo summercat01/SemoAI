@@ -50,6 +50,10 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
       {/* Left: Logo */}
       <div
         onClick={() => scrollTo("hero")}
+        role="button"
+        aria-label="SEMO AI 홈으로"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') scrollTo("hero"); }}
         style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
       >
         {/* △ icon — outline style */}
@@ -81,7 +85,7 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
       </div>
 
       {/* Center: Nav */}
-      <nav className="home-nav" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <nav className="home-nav" aria-label="메인 네비게이션" style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
           return (
@@ -89,6 +93,8 @@ export default function HomeHeader({ scrollTo, activeSection }: HomeHeaderProps)
               className="home-nav-item"
               key={item.id}
               onClick={() => scrollTo(item.id)}
+              aria-label={`${item.label} 섹션으로 이동`}
+              aria-current={isActive ? "true" : undefined}
               style={{
                 ...navBtnStyle,
                 color: isActive ? "#fff" : "rgba(255,255,255,0.75)",

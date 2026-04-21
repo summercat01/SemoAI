@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import pool from '@/lib/db';
+import {
+  RATE_LIMIT_PER_MINUTE, RATE_LIMIT_PER_DAY, RATE_LIMIT_DAY_RETRY_SECONDS,
+  SEARCH_TOPK_STEP1, SEARCH_TOPK_STEP2, SEARCH_FINAL_PICKS, CLAUDE_MAX_TOKENS,
+} from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,12 +45,12 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfte
     `, [ip]);
 
     const row = rows[0];
-    if (row.minute_count > 10) {
+    if (row.minute_count > RATE_LIMIT_PER_MINUTE) {
       const retryAfter = Math.ceil((new Date(row.minute_reset).getTime() - Date.now()) / 1000);
       return { allowed: false, retryAfter: Math.max(1, retryAfter) };
     }
-    if (row.day_count > 100) {
-      return { allowed: false, retryAfter: 3600 };
+    if (row.day_count > RATE_LIMIT_PER_DAY) {
+      return { allowed: false, retryAfter: RATE_LIMIT_DAY_RETRY_SECONDS };
     }
     return { allowed: true };
   } catch {
@@ -207,7 +211,7 @@ async function recommendWithClaude(
 
   const response = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1500,
+    max_tokens: CLAUDE_MAX_TOKENS,
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -249,7 +253,7 @@ export async function POST(req: NextRequest) {
     const step = getStep(conversation);
 
     // 1. 벡터 검색 (step에 따라 후보 수 조절)
-    const topK = step === 1 ? 30 : 50;
+    const topK = step === 1 ? SEARCH_TOPK_STEP1 : SEARCH_TOPK_STEP2;
     let candidates: ServiceRow[] = [];
     let categories: string[] = [];
 
@@ -285,7 +289,7 @@ export async function POST(req: NextRequest) {
       total = reduced;
     } else {
       // Step 3: Claude가 고른 수 = 최종 추천 수
-      total = 10;
+      total = SEARCH_FINAL_PICKS + 1;
     }
 
     // 3. Claude 추천
@@ -302,7 +306,7 @@ export async function POST(req: NextRequest) {
       .filter((s): s is ServiceRow & { reason: string } => s !== null);
 
     // Step 3일 때 total을 실제 추천 수로 보정 (최대 9)
-    if (step === 3) total = Math.min(recommendations.length, 9);
+    if (step === 3) total = Math.min(recommendations.length, SEARCH_FINAL_PICKS);
 
     return NextResponse.json({ recommendations, total, categories, reply, step });
 

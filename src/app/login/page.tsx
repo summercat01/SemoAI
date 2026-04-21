@@ -3,6 +3,7 @@
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import BackgroundGlow from '@/components/BackgroundGlow';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -15,11 +16,8 @@ export default function LoginPage() {
   if (status === 'loading') return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-      {/* Background glows */}
-      <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', filter: 'blur(120px)', background: 'rgba(124,106,247,0.18)', top: '-20%', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', filter: 'blur(100px)', background: 'rgba(79,195,247,0.1)', bottom: '-10%', right: '-10%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none' }} />
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <BackgroundGlow />
 
       <div style={{ width: '100%', maxWidth: 360, padding: '36px 32px', textAlign: 'center', position: 'relative', zIndex: 1, background: 'rgba(124,106,247,0.06)', border: '1px solid rgba(124,106,247,0.18)', borderRadius: 24, backdropFilter: 'blur(12px)' }}>
         {/* Logo */}
@@ -81,6 +79,6 @@ export default function LoginPage() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

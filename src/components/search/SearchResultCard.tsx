@@ -79,6 +79,7 @@ export default function SearchResultCard({ r, rank }: { r: RecommendationResult;
 
   return (
     <a href={`/service/${r.slug}`}
+      aria-label={`${r.name} - ${r.category_name}`}
       style={{
         display: 'flex', flexDirection: 'column', gap: 8, padding: '14px',
         borderRadius: 14,
@@ -134,7 +135,7 @@ export default function SearchResultCard({ r, rank }: { r: RecommendationResult;
 
       {/* 태그라인 */}
       <p style={{
-        fontSize: 12, color: 'rgba(240,240,255,0.55)', lineHeight: 1.55, margin: 0,
+        fontSize: 12, color: 'rgba(240,240,255,0.7)', lineHeight: 1.55, margin: 0,
         flex: hasReason ? '0 0 auto' : '1 1 0',
         display: '-webkit-box',
         WebkitLineClamp: hasReason ? 2 : 3,
@@ -164,8 +165,8 @@ export default function SearchResultCard({ r, rank }: { r: RecommendationResult;
           marginTop: 'auto', paddingTop: 4, flexShrink: 0,
           borderTop: '1px solid rgba(124,106,247,0.1)',
         }}>
-          <span style={{ fontSize: 10, color: 'rgba(124,106,247,0.5)' }}>↗</span>
-          <span style={{ fontSize: 10, color: 'rgba(180,170,220,0.4)', letterSpacing: '0.02em' }}>{domain}</span>
+          <span style={{ fontSize: 10, color: 'rgba(124,106,247,0.7)' }}>↗</span>
+          <span style={{ fontSize: 10, color: 'rgba(180,170,220,0.6)', letterSpacing: '0.02em' }}>{domain}</span>
         </div>
       )}
     </a>

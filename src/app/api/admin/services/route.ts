@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { reembedService } from '@/lib/embedService';
+import { upsertTags } from '@/lib/upsertTags';
 
 export async function GET(req: NextRequest) {
   if (!await checkAdmin()) {
@@ -120,21 +121,3 @@ export async function POST(req: Request) {
   }
 }
 
-async function upsertTags(serviceId: number, tagNames: string[]) {
-  await pool.query('DELETE FROM ai_service_tags WHERE ai_service_id = $1', [serviceId]);
-  for (const rawName of tagNames) {
-    const name = rawName.trim();
-    if (!name) continue;
-    const slug = name.toLowerCase().replace(/[^a-z0-9가-힣]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-    const { rows } = await pool.query(
-      `INSERT INTO tags (name, slug) VALUES ($1, $2)
-       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-       RETURNING id`,
-      [name, slug]
-    );
-    await pool.query(
-      `INSERT INTO ai_service_tags (ai_service_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [serviceId, rows[0].id]
-    );
-  }
-}

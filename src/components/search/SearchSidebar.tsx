@@ -22,7 +22,7 @@ export default function SearchSidebar({
   onDeleteConversation,
 }: SearchSidebarProps) {
   return (
-    <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} style={{
+    <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} aria-label="대화 목록" style={{
       width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column',
       background: 'rgba(10,8,30,0.7)', backdropFilter: 'blur(20px)',
       borderRight: '1px solid rgba(124,106,247,0.15)',
@@ -49,7 +49,7 @@ export default function SearchSidebar({
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>SEMO AI</span>
         </a>
-        <button className="mob-menu-btn" onClick={() => setSidebarOpen(false)} style={{
+        <button className="mob-menu-btn" onClick={() => setSidebarOpen(false)} aria-label="사이드바 닫기" style={{
           display: 'none', width: 28, height: 28, borderRadius: 6, border: 'none',
           background: 'rgba(255,255,255,0.08)', color: 'var(--text)', cursor: 'pointer',
           alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
@@ -90,7 +90,7 @@ export default function SearchSidebar({
         {conversations.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '24px 8px' }}>
             <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>💬</div>
-            <p style={{ fontSize: 12, color: 'rgba(160,180,255,0.4)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: 'rgba(160,180,255,0.6)', lineHeight: 1.6 }}>
               대화 기록이 없어요.<br />새 대화를 시작해보세요.
             </p>
           </div>
@@ -105,11 +105,11 @@ export default function SearchSidebar({
           }}
           onMouseEnter={e => { if (currentId !== conv.id) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; } }}
           onMouseLeave={e => { if (currentId !== conv.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; } }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={currentId === conv.id ? '#a78bfa' : 'rgba(160,180,255,0.4)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={currentId === conv.id ? '#a78bfa' : 'rgba(160,180,255,0.6)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'rgba(220,210,255,0.95)' : 'rgba(160,180,255,0.55)' }}>{conv.title}</span>
-            <button onClick={(e) => onDeleteConversation(conv.id, e)} style={{
+            <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'rgba(220,210,255,0.95)' : 'rgba(160,180,255,0.7)' }}>{conv.title}</span>
+            <button onClick={(e) => onDeleteConversation(conv.id, e)} aria-label={`${conv.title} 대화 삭제`} style={{
               flexShrink: 0, width: 20, height: 20, borderRadius: 4,
               border: 'none', background: 'transparent', color: 'var(--text-muted)',
               cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',

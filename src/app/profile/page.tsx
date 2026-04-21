@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
+import BackgroundGlow from "@/components/BackgroundGlow";
 
 interface UserInfo { provider: string; created_at: string; }
 interface ConvMeta { id: string; title: string; createdAt: number; categories?: string[]; }
@@ -34,7 +35,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetch("/api/user").then(r => r.ok ? r.json() : null).then(d => { if (d) setUserInfo(d); }).catch(() => {});
+      fetch("/api/user").then(r => r.ok ? r.json() : null).then(d => { if (d?.data) setUserInfo(d.data); }).catch(() => {});
     }
   }, [session]);
 
@@ -103,12 +104,7 @@ export default function ProfilePage() {
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       overflow: "hidden",
     }}>
-      {/* Background */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", width: 600, height: 500, borderRadius: "50%", filter: "blur(120px)", background: "rgba(124,106,247,0.13)", top: "-10%", left: "35%" }} />
-        <div style={{ position: "absolute", width: 350, height: 350, borderRadius: "50%", filter: "blur(100px)", background: "rgba(79,195,247,0.08)", bottom: "5%", right: "10%" }} />
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(124,106,247,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.03) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
-      </div>
+      <BackgroundGlow />
 
       {/* Header */}
       <header className="profile-header" style={{
@@ -118,7 +114,7 @@ export default function ProfilePage() {
         background: "transparent",
         borderBottom: "1px solid rgba(124,106,247,0.1)",
       }}>
-        <button onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: 7, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 16, fontWeight: 600, fontFamily: "inherit", transition: "color 0.2s" }}
+        <button onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: 7, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16, fontWeight: 600, fontFamily: "inherit", transition: "color 0.2s" }}
           onMouseEnter={e => e.currentTarget.style.color = "#fff"}
           onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -183,7 +179,7 @@ export default function ProfilePage() {
             <a href="/search" style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "rgba(79,195,247,0.09)", border: "1px solid rgba(79,195,247,0.22)", color: "#93e8ff", textDecoration: "none", transition: "background 0.2s" }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(79,195,247,0.18)"}
               onMouseLeave={e => e.currentTarget.style.background = "rgba(79,195,247,0.09)"}>AI 탐색</a>
-            <button onClick={() => signOut({ callbackUrl: "/" })} style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
+            <button onClick={() => signOut({ callbackUrl: "/" })} style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)"; e.currentTarget.style.color = "#fca5a5"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}>로그아웃</button>
           </div>
@@ -229,7 +225,7 @@ export default function ProfilePage() {
                       <a href={`/recommend?conv=${conv.id}`} style={{ fontSize: 11, fontWeight: 700, color: "#c4b5fd", textDecoration: "none", padding: "4px 10px", borderRadius: 7, background: "rgba(124,106,247,0.1)", border: "1px solid rgba(124,106,247,0.2)", flexShrink: 0, transition: "background 0.15s" }}
                         onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,247,0.2)"}
                         onMouseLeave={e => e.currentTarget.style.background = "rgba(124,106,247,0.1)"}>이어보기</a>
-                      <button onClick={() => deleteConv(conv.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                      <button onClick={() => deleteConv(conv.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.45)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#fca5a5"; }}
                         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.2)"; }}>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>

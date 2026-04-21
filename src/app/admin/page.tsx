@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Pagination from '@/components/Pagination';
+import { ADMIN_PAGE_SIZE } from '@/lib/constants';
 
 interface Category { id: number; name: string; slug: string; }
 
@@ -269,7 +271,7 @@ function TrashModal({ onClose, onRestored }: { onClose: () => void; onRestored: 
 
   const load = () => {
     setLoading(true);
-    fetch('/api/admin/trash').then(r => r.json()).then(d => { setItems(d); setLoading(false); });
+    fetch('/api/admin/trash').then(r => r.json()).then(d => { setItems(d.data ?? []); setLoading(false); });
   };
   useEffect(() => { load(); }, []);
 
@@ -336,45 +338,9 @@ function TrashModal({ onClose, onRestored }: { onClose: () => void; onRestored: 
   );
 }
 
-// ── Pagination ─────────────────────────────────────────────────────────────────
-function PaginationBar({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (p: number) => void }) {
-  const nums = Array.from({ length: totalPages }, (_, i) => i + 1)
-    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2);
-  const items: (number | null)[] = [];
-  nums.forEach((p, i) => {
-    if (i > 0 && p - nums[i - 1] > 1) items.push(null);
-    items.push(p);
-  });
-  const btnBase: React.CSSProperties = {
-    padding: '7px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(255,255,255,0.05)', fontSize: 13, cursor: 'pointer',
-  };
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, paddingBottom: 32 }}>
-      <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
-        style={{ ...btnBase, color: page === 1 ? 'rgba(240,240,255,0.25)' : '#f0f0ff', cursor: page === 1 ? 'default' : 'pointer' }}>
-        ← 이전
-      </button>
-      {items.map((p, i) => p === null
-        ? <span key={'e' + i} style={{ color: 'rgba(240,240,255,0.3)', padding: '0 4px' }}>…</span>
-        : <button key={p} onClick={() => setPage(p)} style={{
-            width: 34, height: 34, borderRadius: 8, border: '1px solid',
-            borderColor: page === p ? '#7c6af7' : 'rgba(255,255,255,0.12)',
-            background: page === p ? 'rgba(124,106,247,0.2)' : 'rgba(255,255,255,0.05)',
-            color: page === p ? '#c4b5fd' : '#f0f0ff',
-            cursor: 'pointer', fontSize: 13, fontWeight: page === p ? 700 : 400,
-          }}>{p}</button>
-      )}
-      <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
-        style={{ ...btnBase, color: page === totalPages ? 'rgba(240,240,255,0.25)' : '#f0f0ff', cursor: page === totalPages ? 'default' : 'pointer' }}>
-        다음 →
-      </button>
-    </div>
-  );
-}
 
 // ── Main ───────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 50;
+const PAGE_SIZE = ADMIN_PAGE_SIZE;
 
 export default function AdminPage() {
   const { status } = useSession();
@@ -424,7 +390,7 @@ export default function AdminPage() {
     if (status === 'unauthenticated') { router.push('/login'); return; }
     if (status !== 'authenticated') return;
     loadServices(1, search, filterCat);
-    fetch('/api/admin/categories').then(r => r.ok ? r.json() : []).then(setCategories);
+    fetch('/api/admin/categories').then(r => r.ok ? r.json() : { data: [] }).then(d => setCategories(d.data ?? []));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -672,7 +638,11 @@ export default function AdminPage() {
           })}
         </div>
 
-        {totalPages > 1 && <PaginationBar page={page} totalPages={totalPages} setPage={goToPage} />}
+        {totalPages > 1 && (
+          <div style={{ marginTop: 20, paddingBottom: 32 }}>
+            <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
+          </div>
+        )}
       </div>
     </div>
   );

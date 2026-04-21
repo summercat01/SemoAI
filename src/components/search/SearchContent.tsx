@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import SearchSidebar from './SearchSidebar';
 import SearchResultCard from './SearchResultCard';
+import StepIndicator, { STEP_HEADERS } from './SearchStepIndicator';
+import PaginatedResults from './SearchPaginatedResults';
+import BackgroundGlow from '@/components/BackgroundGlow';
 import type {
   RecommendationResult,
   ConvTurn,
@@ -19,123 +22,6 @@ function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-const PAGE_SIZE = 12;
-
-/* ── Step Indicator ─────────────────────────────────── */
-function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
-  const labels = ['탐색', '좁히기', '최종 추천'];
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginBottom: 12 }}>
-      {[1, 2, 3].map(s => (
-        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 700,
-            background: s <= step ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.06)',
-            color: s <= step ? '#fff' : 'rgba(255,255,255,0.3)',
-            border: s === step ? '2px solid rgba(124,106,247,0.8)' : '1px solid rgba(255,255,255,0.08)',
-            boxShadow: s === step ? '0 0 12px rgba(124,106,247,0.4)' : 'none',
-            transition: 'all 0.3s',
-          }}>{s}</div>
-          <span style={{
-            fontSize: 11, fontWeight: 600, color: s <= step ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.2)',
-            letterSpacing: '0.03em', transition: 'color 0.3s',
-          }}>{labels[s - 1]}</span>
-          {s < 3 && <div style={{
-            width: 24, height: 1,
-            background: s < step ? 'rgba(124,106,247,0.5)' : 'rgba(255,255,255,0.08)',
-            transition: 'background 0.3s',
-          }} />}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ── Step Header ────────────────────────────────────── */
-const STEP_HEADERS: Record<1 | 2 | 3, { suffix: string }> = {
-  1: { suffix: '개 서비스 탐색 중' },
-  2: { suffix: '개로 좁혀졌어요' },
-  3: { suffix: '개 최종 추천' },
-};
-
-/* ── Paginated Results ──────────────────────────────── */
-function PaginatedResults({
-  recommendations, total, categories,
-}: {
-  recommendations: RecommendationResult[];
-  total: number;
-  categories: string[];
-}) {
-  const [page, setPage] = useState(1);
-  const [dbCards, setDbCards] = useState<RecommendationResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  const fetchDb = useCallback(async (dbPage: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/search/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories, tags: [], keywords: [], page: dbPage, pageSize: PAGE_SIZE }),
-      });
-      const data = await res.json();
-      setDbCards(data.results || []);
-    } finally { setLoading(false); }
-  }, [categories]);
-
-  const goTo = (p: number) => { setPage(p); if (p > 1) fetchDb(p); };
-  const cards = page === 1 ? recommendations : dbCards;
-
-  const getPages = () => {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pages: (number | '...')[] = [];
-    if (page <= 4) { for (let i = 1; i <= 5; i++) pages.push(i); pages.push('...', totalPages); }
-    else if (page >= totalPages - 3) { pages.push(1, '...'); for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i); }
-    else { pages.push(1, '...', page - 1, page, page + 1, '...', totalPages); }
-    return pages;
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{
-        flex: '1 1 0', minHeight: 0, maxHeight: 'calc(100% - 64px)', position: 'relative',
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridAutoRows: '1fr', gap: 8,
-        opacity: loading ? 0.35 : 1, transition: 'opacity 0.2s',
-      }} className="search-result-grid">
-        {cards.map(r => <SearchResultCard key={r.id} r={r} />)}
-        {loading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#7c6af7', animation: 'spin 0.8s linear infinite' }} />
-          </div>
-        )}
-      </div>
-      <div style={{ height: 64, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <button onClick={() => goTo(page - 1)} disabled={page === 1}
-              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === 1 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === 1 ? 0.4 : 1 }}>
-              ← 이전
-            </button>
-            {getPages().map((p, i) => p === '...'
-              ? <span key={`d${i}`} style={{ color: 'var(--text-muted)', fontSize: 13, padding: '0 2px' }}>…</span>
-              : <button key={p} onClick={() => goTo(p as number)}
-                  style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid', borderColor: page === p ? 'rgba(124,106,247,0.6)' : 'var(--border)', background: page === p ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)', color: page === p ? '#c4b5fd' : 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: page === p ? 700 : 400 }}>{p}</button>
-            )}
-            <button onClick={() => goTo(page + 1)} disabled={page === totalPages}
-              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', cursor: page === totalPages ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, opacity: page === totalPages ? 0.4 : 1 }}>
-              다음 →
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Main Component ─────────────────────────────────── */
 export default function SearchContent() {
   const searchParams = useSearchParams();
 
@@ -161,7 +47,8 @@ export default function SearchContent() {
   // 대화 목록 로드: 로그인 시 DB, 비로그인 시 localStorage
   useEffect(() => {
     if (isLoggedIn) {
-      fetch('/api/conversations').then(r => r.json()).then((rows: { id: string; title: string; updated_at: string }[]) => {
+      fetch('/api/conversations').then(r => r.json()).then((res: { data?: { id: string; title: string; updated_at: string }[] }) => {
+        const rows = res.data;
         if (Array.isArray(rows)) {
           setConversations(rows.map(r => ({ id: r.id, title: r.title, createdAt: new Date(r.updated_at).getTime() })));
         }
@@ -176,7 +63,6 @@ export default function SearchContent() {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages, searching]);
 
   const persistConv = useCallback((id: string, data: ConvData, title: string) => {
-    // localStorage (캐시 겸 비로그인 폴백)
     localStorage.setItem(`semo_conv_${id}`, JSON.stringify(data));
     setConversations(prev => {
       const exists = prev.find(c => c.id === id);
@@ -184,7 +70,6 @@ export default function SearchContent() {
       localStorage.setItem('semo_conversations', JSON.stringify(updated));
       return updated;
     });
-    // 로그인 시 DB에도 저장 (백그라운드)
     if (isLoggedIn) {
       fetch('/api/conversations', {
         method: 'POST',
@@ -221,7 +106,13 @@ export default function SearchContent() {
         }),
       });
       if (res.status === 429) {
-        setSummary('요청이 너무 많아요. 잠시 후 다시 시도해주세요.');
+        const errMsg: AiQuestionMsg = { type: 'ai_question', content: '요청이 너무 많아요. 잠시 후 다시 시도해주세요 🙏' };
+        setChatMessages([...newChat, errMsg]);
+        return;
+      }
+      if (!res.ok) {
+        const errMsg: AiQuestionMsg = { type: 'ai_question', content: '죄송해요, 서버에 문제가 생겼어요. 잠시 후 다시 시도해주세요.' };
+        setChatMessages([...newChat, errMsg]);
         return;
       }
       const data = await res.json();
@@ -248,7 +139,8 @@ export default function SearchContent() {
         categories: detectedCategories,
       }, title);
     } catch {
-      setSummary('죄송해요, 검색 중 오류가 발생했어요.');
+      const errMsg: AiQuestionMsg = { type: 'ai_question', content: '죄송해요, 검색 중 오류가 발생했어요. 다시 시도해주세요.' };
+      setChatMessages(prev => [...prev, errMsg]);
     } finally {
       setSearching(false);
     }
@@ -300,13 +192,11 @@ export default function SearchContent() {
 
   const loadConversation = async (id: string) => {
     let data: ConvData | null = null;
-    // localStorage 우선 (빠른 로드)
     try { data = JSON.parse(localStorage.getItem(`semo_conv_${id}`) || 'null'); } catch {}
-    // 로그인 상태이고 localStorage에 없으면 DB에서 가져오기
     if (!data && isLoggedIn) {
       try {
         const res = await fetch(`/api/conversations/${id}`);
-        if (res.ok) { data = await res.json(); }
+        if (res.ok) { const json = await res.json(); data = json.data ?? json; }
       } catch {}
     }
     if (!data) return;
@@ -350,13 +240,7 @@ export default function SearchContent() {
         @keyframes spin { to { transform: rotate(360deg) } }
       `}</style>
 
-      {/* Background glows */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', width: 900, height: 700, borderRadius: '50%', filter: 'blur(120px)', background: 'rgba(124,106,247,0.2)', top: '-10%', left: '50%', transform: 'translateX(-50%)' }} />
-        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', filter: 'blur(100px)', background: 'rgba(79,195,247,0.12)', bottom: '-5%', right: '-5%' }} />
-        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', filter: 'blur(120px)', background: 'rgba(167,139,250,0.09)', bottom: '20%', left: '-5%' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-      </div>
+      <BackgroundGlow />
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 199, backdropFilter: 'blur(2px)' }} />}
 
@@ -385,7 +269,7 @@ export default function SearchContent() {
           </div>
 
           {/* Chat area */}
-          <div className="search-chat-area" style={{ flex: 1, overflowY: 'auto', padding: '24px 20px 16px' }}>
+          <div className="search-chat-area" role="log" aria-label="AI 대화" aria-live="polite" style={{ flex: 1, overflowY: 'auto', padding: '24px 20px 16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Empty state */}
@@ -457,7 +341,6 @@ export default function SearchContent() {
             background: 'rgba(7,7,15,0.85)', backdropFilter: 'blur(16px)', flexShrink: 0,
           }}>
             {step === 3 && hasResult ? (
-              /* Step 3 완료: 새 대화 시작 버튼 */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                 <button onClick={startNew} style={{
                   width: '100%', padding: '12px', borderRadius: 13, border: '1px solid rgba(124,106,247,0.4)',
@@ -482,12 +365,13 @@ export default function SearchContent() {
                 onFocusCapture={e => { e.currentTarget.style.borderColor = 'rgba(124,106,247,0.7)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(124,106,247,0.2)'; }}
                 onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(124,106,247,0.35)'; e.currentTarget.style.boxShadow = 'none'; }}>
                   <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+                    aria-label="AI에게 질문하기"
                     placeholder={pendingQuestion ? '답변을 입력하세요...' : '원하는 작업을 말해주세요...'}
                     rows={1}
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: 'var(--text)', fontFamily: 'inherit', resize: 'none', lineHeight: 1.6, maxHeight: 120, overflowY: 'auto' }}
                     onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }}
                   />
-                  <button type="submit" disabled={!input.trim() || searching} style={{
+                  <button type="submit" disabled={!input.trim() || searching} aria-label="메시지 전송" style={{
                     width: 40, height: 40, borderRadius: 10, border: 'none', flexShrink: 0,
                     cursor: input.trim() && !searching ? 'pointer' : 'default',
                     background: input.trim() && !searching ? 'linear-gradient(135deg, #7c6af7, #4fc3f7)' : 'rgba(255,255,255,0.07)',
@@ -524,10 +408,8 @@ export default function SearchContent() {
               </div>
             ) : hasResult && (
               <>
-                {/* Step indicator */}
                 <StepIndicator step={step} />
 
-                {/* Header */}
                 <div style={{ marginBottom: 16, textAlign: 'center', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <span style={{
@@ -542,17 +424,15 @@ export default function SearchContent() {
                     }}>{step === 3 ? 9 : (total ?? 0).toLocaleString('ko-KR')}</span>
                     <span style={{
                       fontSize: 16, fontWeight: 700, letterSpacing: '2px',
-                      background: 'linear-gradient(135deg, rgba(220,210,255,0.9), rgba(160,180,255,0.6))',
+                      background: 'linear-gradient(135deg, rgba(220,210,255,0.95), rgba(160,180,255,0.75))',
                       WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                       paddingBottom: 2, borderBottom: '1px solid rgba(160,180,255,0.3)',
                     }}>{headerInfo.suffix}</span>
                   </div>
                 </div>
 
-                {/* Cards */}
                 {recommendations.length > 0 && (
                   step === 3 ? (
-                    /* Step 3: 최종 추천 — 페이지네이션 없이 카드만 표시 */
                     <div className="search-result-grid" style={{
                       flex: 1, overflow: 'auto',
                       display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridAutoRows: '1fr',
@@ -563,7 +443,6 @@ export default function SearchContent() {
                       ))}
                     </div>
                   ) : (
-                    /* Step 1-2: 미리보기 + 페이지네이션 */
                     categories.length > 0 ? (
                       <PaginatedResults
                         recommendations={recommendations}
