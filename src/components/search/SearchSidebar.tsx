@@ -110,13 +110,15 @@ export default function SearchSidebar({
             </svg>
             <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'rgba(220,210,255,0.95)' : 'rgba(160,180,255,0.7)' }}>{conv.title}</span>
             <button onClick={(e) => onDeleteConversation(conv.id, e)} aria-label={`${conv.title} 대화 삭제`} style={{
-              flexShrink: 0, width: 20, height: 20, borderRadius: 4,
-              border: 'none', background: 'transparent', color: 'var(--text-muted)',
-              cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              opacity: 0, transition: 'opacity 0.15s',
+              flexShrink: 0, width: 22, height: 22, borderRadius: 5,
+              border: 'none', background: 'transparent', color: 'rgba(180,170,220,0.45)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>×</button>
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(180,170,220,0.45)'; e.currentTarget.style.background = 'transparent'; }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
           </div>
         ))}
       </div>
