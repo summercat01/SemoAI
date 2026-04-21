@@ -12,8 +12,8 @@ const REQUIRED_ENV = [
 export function validateEnv() {
   const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables:\n  ${missing.join('\n  ')}`
+    console.warn(
+      `⚠️ Missing environment variables:\n  ${missing.join('\n  ')}`
     );
   }
 }
