@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback, useEffect } from 'react';
 import type { Conversation } from '@/types/search';
 
 interface SearchSidebarProps {
@@ -21,6 +22,28 @@ export default function SearchSidebar({
   onLoadConversation,
   onDeleteConversation,
 }: SearchSidebarProps) {
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+
+  const handleDeleteClick = useCallback((conv: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteTarget({ id: conv.id, title: conv.title });
+  }, []);
+
+  const confirmDelete = useCallback((e: React.MouseEvent) => {
+    if (deleteTarget) {
+      onDeleteConversation(deleteTarget.id, e);
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, onDeleteConversation]);
+
+  useEffect(() => {
+    if (!deleteTarget) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDeleteTarget(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [deleteTarget]);
   return (
     <aside className={`search-sidebar${sidebarOpen ? ' open' : ''}`} aria-label="대화 목록" style={{
       width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column',
@@ -109,7 +132,7 @@ export default function SearchSidebar({
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: currentId === conv.id ? 'rgba(220,210,255,0.95)' : 'rgba(160,180,255,0.7)' }}>{conv.title}</span>
-            <button onClick={(e) => onDeleteConversation(conv.id, e)} aria-label={`${conv.title} 대화 삭제`} style={{
+            <button onClick={(e) => handleDeleteClick(conv, e)} aria-label={`${conv.title} 대화 삭제`} style={{
               flexShrink: 0, width: 22, height: 22, borderRadius: 5,
               border: 'none', background: 'transparent', color: 'rgba(180,170,220,0.45)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -122,6 +145,51 @@ export default function SearchSidebar({
           </div>
         ))}
       </div>
+
+      {/* Delete confirm dialog */}
+      {deleteTarget && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }} onClick={() => setDeleteTarget(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'rgba(18,14,40,0.95)', border: '1px solid rgba(124,106,247,0.3)',
+            borderRadius: 14, padding: '20px 22px', width: '100%', maxWidth: 230,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#e2d9f3', marginBottom: 6, lineHeight: 1.5 }}>
+              이 대화를 삭제할까요?
+            </p>
+            <p style={{ fontSize: 12, color: 'rgba(180,170,220,0.6)', marginBottom: 16, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {deleteTarget.title}
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setDeleteTarget(null)} style={{
+                flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}>
+                취소
+              </button>
+              <button onClick={confirmDelete} style={{
+                flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.15)',
+                color: '#fca5a5', cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}>
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
