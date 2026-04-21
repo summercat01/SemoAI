@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { getDomain } from '@/lib/constants';
 
 interface ServiceLogoProps {
@@ -29,14 +28,13 @@ export default function ServiceLogo({ url, name, size = 48 }: ServiceLogoProps) 
     );
   }
   return (
-    <Image
+    <img
       src={sources[src]}
       alt={name}
       width={size}
       height={size}
       onError={() => setSrc(s => s + 1)}
       style={{ borderRadius: size * 0.2, objectFit: 'contain', background: '#fff', padding: size * 0.08, flexShrink: 0 }}
-      unoptimized={src === 1}
     />
   );
 }
