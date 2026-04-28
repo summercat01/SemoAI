@@ -152,17 +152,31 @@ export default function SearchContent() {
     const convId = searchParams.get('conv');
     if (convId) {
       if (!/^[a-zA-Z0-9_-]+$/.test(convId)) return;
-      try {
-        const data: ConvData = JSON.parse(localStorage.getItem(`semo_conv_${convId}`) || 'null');
-        if (data) {
-          setChatMessages(data.chatMessages || []);
-          setRecommendations(data.recommendations || []);
-          setTotal(data.total ?? null);
-          setSummary(data.summary || '');
-          setCategories(data.categories || []);
-          setCurrentId(convId);
-        }
-      } catch {}
+      // 로컬 먼저, 없으면 공개 API로 (공유된 링크 지원)
+      let localData: ConvData | null = null;
+      try { localData = JSON.parse(localStorage.getItem(`semo_conv_${convId}`) || 'null'); } catch {}
+      if (localData) {
+        setChatMessages(localData.chatMessages || []);
+        setRecommendations(localData.recommendations || []);
+        setTotal(localData.total ?? null);
+        setSummary(localData.summary || '');
+        setCategories(localData.categories || []);
+        setCurrentId(convId);
+      } else {
+        fetch(`/api/shared/${convId}`)
+          .then(r => r.ok ? r.json() : null)
+          .then((json) => {
+            const data: ConvData | null = json?.data ?? null;
+            if (data) {
+              setChatMessages(data.chatMessages || []);
+              setRecommendations(data.recommendations || []);
+              setTotal(data.total ?? null);
+              setSummary(data.summary || '');
+              setCategories(data.categories || []);
+              setCurrentId(convId);
+            }
+          }).catch(() => {});
+      }
       return;
     }
     const q = searchParams.get('q');
@@ -199,6 +213,13 @@ export default function SearchContent() {
         if (res.ok) { const json = await res.json(); data = json.data ?? json; }
       } catch {}
     }
+    // 비로그인 or 내 DB에 없으면 공개 API로 시도 (다른 사람이 공유한 링크)
+    if (!data) {
+      try {
+        const res = await fetch(`/api/shared/${id}`);
+        if (res.ok) { const json = await res.json(); data = json.data ?? json; }
+      } catch {}
+    }
     if (!data) return;
     setChatMessages(data.chatMessages || []);
     setRecommendations(data.recommendations || []);
@@ -232,7 +253,27 @@ export default function SearchContent() {
   const pendingQuestion = lastMsg?.type === 'ai_question' ? lastMsg.content : null;
   const hasResult = total !== null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const headerInfo = STEP_HEADERS[step];
+
+  const handleShare = () => {
+    if (!currentId) return;
+    const url = `${window.location.origin}/recommend?conv=${currentId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // clipboard API 실패 시 선택 방식
+      const el = document.createElement('textarea');
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden', position: 'relative' }}>
@@ -408,7 +449,31 @@ export default function SearchContent() {
               </div>
             ) : hasResult && (
               <>
-                <StepIndicator step={step} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexShrink: 0 }}>
+                  <StepIndicator step={step} />
+                  {isLoggedIn && currentId && (
+                    <button onClick={handleShare} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      border: copied ? '1px solid rgba(79,195,247,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                      background: copied ? 'rgba(79,195,247,0.1)' : 'rgba(255,255,255,0.05)',
+                      color: copied ? '#4fc3f7' : 'var(--text-muted)',
+                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', flexShrink: 0,
+                    }}>
+                      {copied ? (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          복사됨!
+                        </>
+                      ) : (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                          공유
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
 
                 <div style={{ marginBottom: 16, textAlign: 'center', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
