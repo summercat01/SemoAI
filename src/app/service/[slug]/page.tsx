@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import pool from '@/lib/db';
+import { auth } from '@/auth';
 import ServiceLogo from '@/components/ServiceLogo';
 import RecentlyViewedTracker from '@/components/service/RecentlyViewedTracker';
+import BookmarkButton from '@/components/service/BookmarkButton';
 import { getDomain, PRICING_BADGE } from '@/lib/constants';
 
 export const revalidate = 3600; // 1시간마다 재검증
@@ -73,6 +75,18 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const service = await getService(slug);
   if (!service) notFound();
+
+  const session = await auth();
+  let isBookmarked = false;
+  if (session?.user?.id) {
+    try {
+      const { rows } = await pool.query(
+        `SELECT 1 FROM bookmarks WHERE user_id = $1 AND service_id = $2`,
+        [session.user.id, service.id]
+      );
+      isBookmarked = rows.length > 0;
+    } catch {}
+  }
 
   const badge = PRICING_BADGE[service.pricing_type] ?? { label: service.pricing_type, color: '#888' };
   const domain = getDomain(service.website_url);
@@ -157,19 +171,21 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
               )}
             </div>
           </div>
-          {/* CTA */}
-          <a href={service.website_url} target="_blank" rel="noopener noreferrer" className="svc-hero-cta" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '14px 28px', borderRadius: 14,
-            background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
-            color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 16,
-            flexShrink: 0,
-          }}>
-            {domain} 바로가기
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-          </a>
+          {/* CTA + Bookmark */}
+          <div className="svc-hero-cta" style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+            <a href={service.website_url} target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 22px', borderRadius: 12,
+              background: 'linear-gradient(135deg, #7c6af7, #4fc3f7)',
+              color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 15,
+            }}>
+              {domain} 바로가기
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+            <BookmarkButton serviceId={service.id} initialBookmarked={isBookmarked} />
+          </div>
         </div>
 
         {/* Info grid */}

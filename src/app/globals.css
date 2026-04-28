@@ -424,6 +424,7 @@ html, body {
     grid-template-columns: 1fr !important;
     overflow: visible !important;
     min-height: auto !important;
+    max-height: none !important;
   }
   .profile-page-root {
     height: auto !important;

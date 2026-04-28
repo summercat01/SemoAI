@@ -8,6 +8,7 @@ import BackgroundGlow from "@/components/BackgroundGlow";
 interface UserInfo { provider: string; created_at: string; }
 interface ConvMeta { id: string; title: string; createdAt: number; categories?: string[]; }
 interface RecentService { slug: string; name: string; category: string; viewedAt: number; }
+interface BookmarkedService { id: number; service_id: number; slug: string; name: string; tagline: string; pricing_type: string; category_name: string; created_at: string; }
 
 function timeAgo(ts: number) {
   const m = Math.floor((Date.now() - ts) / 60000);
@@ -28,6 +29,7 @@ export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [bookmarks, setBookmarks] = useState<BookmarkedService[]>([]);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -36,6 +38,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (session?.user?.id) {
       fetch("/api/user").then(r => r.ok ? r.json() : null).then(d => { if (d?.data) setUserInfo(d.data); }).catch(() => {});
+      fetch("/api/bookmarks").then(r => r.ok ? r.json() : null).then(d => { if (d?.data) setBookmarks(d.data); }).catch(() => {});
     }
   }, [session]);
 
@@ -162,6 +165,7 @@ export default function ProfilePage() {
           <div className="profile-strip-stats" style={{ display: "flex", gap: 24, marginLeft: "auto" }}>
             {[
               { value: conversations.length, label: "추천 기록" },
+              { value: bookmarks.length, label: "북마크" },
               { value: recentServices.length, label: "최근 본 서비스" },
             ].map(s => (
               <div key={s.label} style={{ textAlign: "center" }}>
@@ -186,7 +190,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Row 2: main content panels */}
-        <div className="profile-panels" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, overflow: "hidden", minHeight: 0 }}>
+        <div className="profile-panels" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, overflow: "hidden", minHeight: 0 }}>
 
           {/* AI 추천 기록 */}
           <div style={{ ...cardStyle }}>
@@ -237,11 +241,49 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Right column: 최근 본 서비스 */}
-          <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+          {/* 북마크 */}
+          <div style={{ ...cardStyle }}>
+            <div style={sectionHeaderStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 18 }}>🔖</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#e2d9f3" }}>북마크</span>
+              </div>
+              {bookmarks.length > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(251,146,60,0.2)", color: "#fb923c", padding: "2px 8px", borderRadius: 100 }}>{bookmarks.length}</span>
+              )}
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
+              {bookmarks.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", textAlign: "center", gap: 10 }}>
+                  <span style={{ fontSize: 26 }}>🔖</span>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#e2d9f3" }}>저장한 서비스가 없어요</p>
+                  <a href="/search" style={{ fontSize: 12, fontWeight: 700, color: "#fb923c", textDecoration: "none", padding: "5px 12px", borderRadius: 8, background: "rgba(251,146,60,0.09)", border: "1px solid rgba(251,146,60,0.22)" }}>탐색하기</a>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {bookmarks.map(bm => (
+                    <a key={bm.id} href={`/service/${bm.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 11, textDecoration: "none", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(251,146,60,0.12)", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(251,146,60,0.07)"; e.currentTarget.style.borderColor = "rgba(251,146,60,0.3)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(251,146,60,0.12)"; }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#fb923c" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e2d9f3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>{bm.name}</div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bm.tagline}</div>
+                      </div>
+                      {bm.category_name && (
+                        <span style={{ fontSize: 10, color: "#fb923c", background: "rgba(251,146,60,0.1)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{bm.category_name}</span>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
-            {/* 최근 본 서비스 */}
-            <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
+          {/* 최근 본 서비스 */}
+          <div style={{ ...cardStyle }}>
               <div style={sectionHeaderStyle}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 18 }}>🔍</span>
@@ -275,9 +317,6 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-
-
-          </div>
         </div>
       </div>
     </div>
