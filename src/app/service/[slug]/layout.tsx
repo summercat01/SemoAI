@@ -9,6 +9,7 @@ export async function generateMetadata(
   try {
     const { rows } = await pool.query(
       `SELECT s.name, s.tagline, s.description, s.pricing_type, s.website_url,
+              s.key_features, s.target_user,
               c.name as category_name
        FROM ai_services s
        LEFT JOIN categories c ON s.category_id = c.id
@@ -22,19 +23,33 @@ export async function generateMetadata(
     const pricing = (PRICING_BADGE[s.pricing_type] ?? { label: s.pricing_type }).label;
     const title = `${s.name} — ${pricing} AI 서비스`;
     const description = s.tagline || s.description || `${s.name} AI 서비스 소개`;
+    const ogImageUrl = `${BASE_URL}/service/${slug}/opengraph-image`;
+
+    const keywords: string[] = [s.name, 'AI 서비스', '인공지능'];
+    if (s.category_name) keywords.push(s.category_name);
+    if (s.pricing_type === 'free') keywords.push('무료 AI');
+    if (s.key_features) {
+      s.key_features.split(/[,\n]+/).slice(0, 3).forEach((f: string) => {
+        const trimmed = f.trim();
+        if (trimmed) keywords.push(trimmed);
+      });
+    }
 
     return {
       title,
       description,
+      keywords,
       openGraph: {
         title: `${title} | 세모 AI`,
         description,
         url: `${BASE_URL}/service/${slug}`,
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${s.name} — 세모 AI` }],
       },
       twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title: `${title} | 세모 AI`,
         description,
+        images: [ogImageUrl],
       },
     };
   } catch {

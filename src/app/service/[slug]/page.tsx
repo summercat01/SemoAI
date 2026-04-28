@@ -77,8 +77,29 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
   const badge = PRICING_BADGE[service.pricing_type] ?? { label: service.pricing_type, color: '#888' };
   const domain = getDomain(service.website_url);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: service.name,
+    description: service.tagline || service.description,
+    url: service.website_url,
+    applicationCategory: 'AIApplication',
+    operatingSystem: service.platforms?.join(', ') || 'Web',
+    offers: {
+      '@type': 'Offer',
+      price: service.pricing_type === 'free' ? '0' : undefined,
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/OnlineOnly',
+    },
+    ...(service.category_name ? { applicationSubCategory: service.category_name } : {}),
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <RecentlyViewedTracker slug={service.slug} name={service.name} category={service.category_name} />
 
       {/* Header */}
