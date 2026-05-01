@@ -3,6 +3,7 @@ import pool from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { reembedService } from '@/lib/embedService';
 import { upsertTags } from '@/lib/upsertTags';
+import { invalidateServiceCaches } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!await checkAdmin()) {
@@ -37,6 +38,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await upsertTags(Number(id), tags || []);
     // 임베딩 재생성 (백그라운드 — 응답에 영향 없음)
     reembedService(Number(id)).catch(() => {});
+    invalidateServiceCaches();
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
     console.error(error);
@@ -53,6 +55,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     await pool.query('UPDATE ai_services SET deleted_at = now() WHERE id = $1', [id]);
+    invalidateServiceCaches();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);
@@ -68,6 +71,7 @@ export async function PATCH(_req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params;
     await pool.query('UPDATE ai_services SET deleted_at = NULL WHERE id = $1', [id]);
+    invalidateServiceCaches();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);

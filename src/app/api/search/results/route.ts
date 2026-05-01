@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { withCache, TTL } from '@/lib/cache';
+import { reportError } from '@/lib/errorLogger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -99,19 +101,23 @@ export async function POST(req: NextRequest) {
     // Count query uses the same params minus limit/offset (last 2)
     const countParams = params.slice(0, params.length - 2);
 
-    const [{ rows }, { rows: countRows }] = await Promise.all([
-      pool.query(sql, params),
-      pool.query(countSql, countParams),
-    ]);
+    const cacheKey = `search:results:${JSON.stringify({ categories, tags, keywords, pricing, sort, page, pageSize, refinement })}`;
+    const result = await withCache(cacheKey, TTL.SEARCH_RESULTS, async () => {
+      const [{ rows }, { rows: countRows }] = await Promise.all([
+        pool.query(sql, params),
+        pool.query(countSql, countParams),
+      ]);
+      return { results: rows, total: parseInt(countRows[0].total) };
+    });
 
     return NextResponse.json({
-      results: rows,
-      total: parseInt(countRows[0].total),
+      results: result.results,
+      total: result.total,
       page,
       pageSize,
     });
   } catch (error) {
-    console.error('Results error:', error);
+    reportError(error, 'api/search/results').catch(() => {});
     return NextResponse.json({ results: [], total: 0, page: 1, pageSize: 24 }, { status: 500 });
   }
 }

@@ -8,6 +8,7 @@ import { PRICING_BADGE } from "@/lib/constants";
 interface AiService {
   id: number;
   name: string;
+  slug: string;
   tagline: string;
   pricing_type: string;
   website_url: string;
@@ -24,7 +25,7 @@ const EXAMPLES = [
 
 
 function ServiceCard({ s, isActive, sm, CARD_WIDTH, onClick }: {
-  s: { id: number; name: string; tagline: string; pricing_type: string; website_url: string; category_name: string };
+  s: { id: number; name: string; slug: string; tagline: string; pricing_type: string; website_url: string; category_name: string };
   isActive: boolean;
   sm: boolean;
   CARD_WIDTH: number;
@@ -78,7 +79,7 @@ function ServiceCard({ s, isActive, sm, CARD_WIDTH, onClick }: {
         display: "flex",
         flexDirection: "column",
         gap: 16,
-        cursor: isActive ? "default" : "pointer",
+        cursor: "pointer",
         transition: hovering ? "transform 0.1s ease-out" : "all 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: isActive ? 1 : 0.55,
         transform,
@@ -116,15 +117,21 @@ function ServiceCard({ s, isActive, sm, CARD_WIDTH, onClick }: {
         <p style={{ fontSize: isActive ? (sm ? 10 : 15) : sm ? 9 : 12, color: "rgba(240,240,255,0.55)", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1, margin: 0, paddingRight: 8 }}>
           {s.tagline}
         </p>
-        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 9px", borderRadius: 20, border: `1px solid ${badge.color}55`, color: badge.color, background: `${badge.color}18`, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "flex-end" }}>
-          {badge.label}
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 9px", borderRadius: 20, border: `1px solid ${badge.color}55`, color: badge.color, background: `${badge.color}18`, whiteSpace: "nowrap" }}>
+            {badge.label}
+          </span>
+          {isActive && !sm && (
+            <span style={{ fontSize: 10, color: "rgba(196,181,253,0.5)", whiteSpace: "nowrap", letterSpacing: "0.3px" }}>
+              클릭해서 자세히 보기 →
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-const TARGET = 4000;
 const DURATION = 3000;
 
 function useCountUp(target: number, duration: number) {
@@ -157,7 +164,8 @@ export default function HeroSection() {
   const [input, setInput] = useState("");
   const [exampleIdx, setExampleIdx] = useState(0);
   const [cardWidth, setCardWidth] = useState(480);
-  const { count, done } = useCountUp(TARGET, DURATION);
+  const [serviceTotal, setServiceTotal] = useState(0);
+  const { count, done } = useCountUp(serviceTotal, DURATION);
 
   const SIDE_GAP = cardWidth < 280 ? 10 : cardWidth < 400 ? 14 : 24;
   const CARD_WIDTH = cardWidth;
@@ -179,6 +187,7 @@ export default function HeroSection() {
       .then((d) => {
         setServices(d.services || []);
         setPosition(d.services?.length ?? 0);
+        if (d.total) setServiceTotal(d.total);
       });
   }, []);
 
@@ -383,7 +392,9 @@ export default function HeroSection() {
                     sm={sm}
                     CARD_WIDTH={CARD_WIDTH}
                     onClick={() => {
-                      if (!isActive) {
+                      if (isActive) {
+                        router.push(`/service/${s.slug}`);
+                      } else {
                         setAnimated(true);
                         setPosition(i);
                       }

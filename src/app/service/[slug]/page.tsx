@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import ServiceLogo from '@/components/ServiceLogo';
 import RecentlyViewedTracker from '@/components/service/RecentlyViewedTracker';
 import BookmarkButton from '@/components/service/BookmarkButton';
+import CompareButton from '@/components/compare/CompareButton';
 import { getDomain, PRICING_BADGE } from '@/lib/constants';
 
 export const revalidate = 3600; // 1시간마다 재검증
@@ -33,6 +34,32 @@ const SKILL_LABEL: Record<string, string> = {
   advanced:     '고급자',
   any:          '누구나',
 };
+
+interface RelatedService {
+  id: number;
+  name: string;
+  slug: string;
+  tagline: string;
+  pricing_type: string;
+  website_url: string;
+  category_name: string;
+}
+
+async function getRelated(categorySlug: string, excludeId: number): Promise<RelatedService[]> {
+  try {
+    const { rows } = await pool.query(`
+      SELECT s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url, c.name as category_name
+      FROM ai_services s
+      LEFT JOIN categories c ON s.category_id = c.id
+      WHERE c.slug = $1 AND s.id != $2 AND s.is_active = true
+      ORDER BY s.is_featured DESC, RANDOM()
+      LIMIT 4
+    `, [categorySlug, excludeId]);
+    return rows;
+  } catch {
+    return [];
+  }
+}
 
 async function getService(slug: string): Promise<ServiceDetail | null> {
   try {
@@ -73,12 +100,16 @@ function InfoCard({ title, content, icon }: { title: string; content: string; ic
 
 export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const service = await getService(slug);
+  const [service, session] = await Promise.all([getService(slug), auth()]);
   if (!service) notFound();
 
-  const session = await auth();
+  const [related] = await Promise.all([
+    getRelated(service.category_slug, service.id),
+  ]);
+
   let isBookmarked = false;
   if (session?.user?.id) {
+
     try {
       const { rows } = await pool.query(
         `SELECT 1 FROM bookmarks WHERE user_id = $1 AND service_id = $2`,
@@ -185,6 +216,19 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
               </svg>
             </a>
             <BookmarkButton serviceId={service.id} initialBookmarked={isBookmarked} />
+            <CompareButton size="md" service={{
+              id: service.id,
+              slug: service.slug,
+              name: service.name,
+              website_url: service.website_url,
+              category_name: service.category_name,
+              pricing_type: service.pricing_type,
+              tagline: service.tagline,
+              key_features: service.key_features,
+              target_user: service.target_user,
+              limitations: service.limitations,
+              platforms: service.platforms,
+            }} />
           </div>
         </div>
 
@@ -218,6 +262,39 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
                   color: '#c4b5fd', background: 'rgba(124,106,247,0.08)',
                 }}>{tag}</span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Related services */}
+        {related.length > 0 && (
+          <div style={{ marginBottom: 40 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 14 }}>
+              같은 카테고리 서비스
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {related.map(r => {
+                const rb = PRICING_BADGE[r.pricing_type] ?? { label: r.pricing_type, color: '#888' };
+                return (
+                  <a key={r.id} href={`/service/${r.slug}`} style={{
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                    padding: '14px 16px', borderRadius: 12, textDecoration: 'none', color: 'inherit',
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,106,247,0.08)'; e.currentTarget.style.borderColor = 'rgba(124,106,247,0.3)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ServiceLogo url={r.website_url} name={r.name} size={28} />
+                      <span style={{ fontWeight: 700, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, border: `1px solid ${rb.color}55`, color: rb.color, background: `${rb.color}18`, flexShrink: 0 }}>{rb.label}</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'rgba(240,240,255,0.6)', lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {r.tagline}
+                    </p>
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}

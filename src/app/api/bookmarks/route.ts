@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { auth } from '@/auth';
+import { reportError } from '@/lib/errorLogger';
 
 // GET /api/bookmarks — 로그인 유저의 북마크 목록
 export async function GET() {
@@ -21,7 +22,7 @@ export async function GET() {
     );
     return NextResponse.json({ data: rows });
   } catch (error) {
-    console.error('Bookmarks GET error:', error);
+    reportError(error, 'api/bookmarks GET').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Bookmarks POST error:', error);
+    reportError(error, 'api/bookmarks POST').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

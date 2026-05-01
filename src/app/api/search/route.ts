@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import pool from '@/lib/db';
+import { reportError } from '@/lib/errorLogger';
 import {
   RATE_LIMIT_PER_MINUTE, RATE_LIMIT_PER_DAY, RATE_LIMIT_DAY_RETRY_SECONDS,
-  SEARCH_TOPK_STEP1, SEARCH_TOPK_STEP2, SEARCH_FINAL_PICKS, CLAUDE_MAX_TOKENS,
+  SEARCH_TOPK_STEP1, SEARCH_TOPK_STEP2, SEARCH_FINAL_PICKS, CLAUDE_MAX_TOKENS, CLAUDE_MODEL,
 } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,24 @@ export const dynamic = 'force-dynamic';
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
-/* ── Rate Limiter (PostgreSQL-backed) ────────────────── */
+/* ── 인메모리 폴백 리미터 (DB 다운 시) ────────────────── */
+const memLimiter = new Map<string, { count: number; resetAt: number }>();
+
+function checkMemRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = memLimiter.get(ip);
+  if (!entry || now > entry.resetAt) {
+    memLimiter.set(ip, { count: 1, resetAt: now + 60_000 });
+    return { allowed: true };
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_PER_MINUTE) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  return { allowed: true };
+}
+
+/* ── Rate Limiter (PostgreSQL-backed, 인메모리 폴백) ────────────────── */
 async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter?: number }> {
   try {
     const { rows } = await pool.query<{
@@ -54,8 +72,8 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfte
     }
     return { allowed: true };
   } catch {
-    // Rate limit DB 오류 시 요청 허용 (서비스 중단 방지)
-    return { allowed: true };
+    // DB 오류 시 인메모리 폴백 리미터로 대체 (분당 제한 유지)
+    return checkMemRateLimit(ip);
   }
 }
 
@@ -210,7 +228,7 @@ async function recommendWithClaude(
   const prompt = STEP_PROMPTS[step](convText, serviceList);
 
   const response = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-6',
+    model: CLAUDE_MODEL,
     max_tokens: CLAUDE_MAX_TOKENS,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -311,7 +329,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ recommendations, total, categories, reply, step });
 
   } catch (error) {
-    console.error('Search error:', error);
+    reportError(error, 'api/search').catch(() => {});
     try {
       const { rows } = await pool.query(`
         SELECT s.id, s.name, s.slug, s.tagline, s.pricing_type, s.website_url,

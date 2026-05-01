@@ -2,6 +2,7 @@
 
 import ServiceLogo from '@/components/ServiceLogo';
 import { PRICING_BADGE } from '@/lib/constants';
+import CompareButton from '@/components/compare/CompareButton';
 import type { RecommendationResult } from '@/types/search';
 
 function getDomain(url: string): string {
@@ -158,17 +159,30 @@ export default function SearchResultCard({ r, rank }: { r: RecommendationResult;
         </div>
       )}
 
-      {/* 하단: 도메인 */}
-      {domain && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          marginTop: 'auto', paddingTop: 4, flexShrink: 0,
-          borderTop: '1px solid rgba(124,106,247,0.1)',
-        }}>
-          <span style={{ fontSize: 10, color: 'rgba(124,106,247,0.7)' }}>↗</span>
-          <span style={{ fontSize: 10, color: 'rgba(180,170,220,0.6)', letterSpacing: '0.02em' }}>{domain}</span>
-        </div>
-      )}
+      {/* 하단: 도메인 + 비교 */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: 'auto', paddingTop: 4, flexShrink: 0,
+        borderTop: '1px solid rgba(124,106,247,0.1)',
+      }}>
+        {domain ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 10, color: 'rgba(124,106,247,0.7)' }}>↗</span>
+            <span style={{ fontSize: 10, color: 'rgba(180,170,220,0.6)', letterSpacing: '0.02em' }}>{domain}</span>
+          </div>
+        ) : <div />}
+        <CompareButton service={{
+          id: r.id,
+          slug: r.slug,
+          name: r.name,
+          website_url: r.website_url,
+          category_name: r.category_name,
+          pricing_type: r.pricing_type,
+          tagline: r.tagline,
+          key_features: r.key_features,
+          target_user: r.target_user,
+        }} />
+      </div>
     </a>
   );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { reportError } from '@/lib/errorLogger';
 
 // GET /api/shared/[id] — 인증 없이 공유된 대화 조회 (읽기 전용)
 export async function GET(
@@ -20,7 +21,7 @@ export async function GET(
 
     return NextResponse.json({ data: rows[0].data });
   } catch (error) {
-    console.error('Shared GET error:', error);
+    reportError(error, 'api/shared/[id]').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

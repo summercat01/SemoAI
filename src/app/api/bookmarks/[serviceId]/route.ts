@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { auth } from '@/auth';
+import { reportError } from '@/lib/errorLogger';
 
 // GET /api/bookmarks/[serviceId] — 북마크 여부 확인
 export async function GET(
@@ -18,7 +19,7 @@ export async function GET(
     );
     return NextResponse.json({ bookmarked: rows.length > 0 });
   } catch (error) {
-    console.error('Bookmark GET error:', error);
+    reportError(error, 'api/bookmarks/[serviceId] GET').catch(() => {});
     return NextResponse.json({ bookmarked: false });
   }
 }
@@ -39,7 +40,7 @@ export async function DELETE(
     );
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Bookmark DELETE error:', error);
+    reportError(error, 'api/bookmarks/[serviceId] DELETE').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { reportError } from '@/lib/errorLogger';
 
 export async function GET(
   _req: NextRequest,
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json({ data: rows[0] });
   } catch (error) {
-    console.error('Service detail error:', error);
+    reportError(error, 'api/services/[slug]').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

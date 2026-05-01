@@ -23,28 +23,40 @@ const STARS: { left: number; top: number; size: number; op: number; delay: numbe
   {left:17,top:35,size:2,op:.65,delay:3.1},{left:54,top:78,size:2,op:.6,delay:1.5},{left:44,top:70,size:3,op:.5,delay:0.3},
 ];
 
-const CATEGORIES = [
-  { name: "이미지 생성", abbr: "이미지",  color: "#a78bfa" },
-  { name: "영상 제작",   abbr: "영상",    color: "#4fc3f7" },
-  { name: "코딩/개발",  abbr: "코딩",    color: "#34d399" },
-  { name: "글쓰기",     abbr: "글쓰기",  color: "#f59e0b" },
-  { name: "음악/오디오",abbr: "음악",    color: "#ec4899" },
-  { name: "게임 개발",  abbr: "게임",    color: "#8b5cf6" },
-  { name: "비즈니스",   abbr: "비즈니스",color: "#60a5fa" },
-  { name: "교육",       abbr: "교육",    color: "#10b981" },
-  { name: "챗봇/대화",  abbr: "챗봇",    color: "#f97316" },
-  { name: "디자인",     abbr: "디자인",  color: "#e879f9" },
-];
+const CATEGORY_COLORS: Record<string, string> = {
+  "이미지": "#a78bfa", "이미지 생성": "#a78bfa",
+  "영상": "#4fc3f7", "영상 제작": "#4fc3f7",
+  "코딩": "#34d399", "코딩/개발": "#34d399", "개발": "#34d399",
+  "글쓰기": "#f59e0b",
+  "음악": "#ec4899", "음악/오디오": "#ec4899", "오디오": "#ec4899",
+  "게임": "#8b5cf6", "게임 개발": "#8b5cf6",
+  "비즈니스": "#60a5fa",
+  "교육": "#10b981",
+  "챗봇": "#f97316", "챗봇/대화": "#f97316",
+  "디자인": "#e879f9",
+  "생산성": "#fbbf24",
+  "번역": "#2dd4bf",
+  "검색": "#818cf8",
+};
 
-const ITEMS: typeof CATEGORIES = [...CATEGORIES, ...CATEGORIES]; // 각 카테고리 2개씩, 총 20개
-const N = ITEMS.length;
+const DEFAULT_COLORS = ["#a78bfa","#4fc3f7","#34d399","#f59e0b","#ec4899","#8b5cf6","#60a5fa","#10b981","#f97316","#e879f9"];
+
+interface Category { id: number; name: string; slug: string; service_count: number; color: string; abbr: string; }
+
+function getColor(name: string, idx: number): string {
+  return CATEGORY_COLORS[name] ?? DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+}
+
+function getAbbr(name: string): string {
+  return name.replace("/", "/").split(/[/·\s]/)[0].slice(0, 4);
+}
 const MAIN_R = 1000;
 const SPEED = 0.1;
 
-function getActiveIdx(rotation: number) {
+function getActiveIdx(rotation: number, count: number = 20) {
   let best = 0, bestDist = Infinity;
-  for (let i = 0; i < N; i++) {
-    const angle = (((i / N) * 360 + rotation) % 360 + 360) % 360;
+  for (let i = 0; i < count; i++) {
+    const angle = (((i / count) * 360 + rotation) % 360 + 360) % 360;
     const dist = Math.min(Math.abs(angle - 270), 360 - Math.abs(angle - 270));
     if (dist < bestDist) { bestDist = dist; best = i; }
   }
@@ -63,8 +75,9 @@ interface OrbitProps {
   interactive?: boolean;
 }
 
-function Orbit({ rotation, radius, visibleFn, pivot, opacity = 1, sizeActive = 90, sizeNormal = 52, showLabel = true, interactive = true }: OrbitProps) {
-  const activeIdx = getActiveIdx(rotation);
+function Orbit({ rotation, radius, visibleFn, pivot, opacity = 1, sizeActive = 90, sizeNormal = 52, showLabel = true, interactive = true, items }: OrbitProps & { items: Category[] }) {
+  const N_items = items.length;
+  const activeIdx = getActiveIdx(rotation, N_items);
   return (
     <div style={{ position: "absolute", width: 0, height: 0, opacity, ...pivot }}>
       {/* Ring decoration */}
@@ -73,7 +86,8 @@ function Orbit({ rotation, radius, visibleFn, pivot, opacity = 1, sizeActive = 9
         borderRadius: "50%", border: "1px solid rgba(167,139,250,0.07)",
         transform: "translate(-50%, -50%)", pointerEvents: "none",
       }} />
-      {ITEMS.map((cat, i) => {
+      {items.map((cat, i) => {
+        const N = N_items;
         const angle = (((i / N) * 360 + rotation) % 360 + 360) % 360;
         const rad = (angle * Math.PI) / 180;
         const x = radius * Math.cos(rad);
@@ -90,7 +104,7 @@ function Orbit({ rotation, radius, visibleFn, pivot, opacity = 1, sizeActive = 9
         return (
           <a
             key={i}
-            href={interactive ? "/search" : undefined}
+            href={interactive ? `/search?category=${cat.slug}` : undefined}
             style={{
               position: "absolute", left: x, top: y,
               transform: `translate(-50%, -50%) scale(${isActive ? 1.2 : scale})`,
@@ -143,6 +157,21 @@ export default function SearchSection() {
   const [visible, setVisible] = useState(false);
   const [rotation, setRotation] = useState(0);
   const rafRef = useRef<number>(0);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then(r => r.json())
+      .then(d => {
+        const cats: Category[] = (d.categories || []).slice(0, 16).map((c: { id: number; name: string; slug: string; service_count: number }, idx: number) => ({
+          ...c,
+          color: getColor(c.name, idx),
+          abbr: getAbbr(c.name),
+        }));
+        // Double for seamless orbit
+        setCategories([...cats, ...cats]);
+      });
+  }, []);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -166,7 +195,7 @@ export default function SearchSection() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const activeIdx = getActiveIdx(rotation);
+  const activeIdx = getActiveIdx(rotation, categories.length);
 
   return (
     <section
@@ -206,14 +235,17 @@ export default function SearchSection() {
         {mounted && (
           <>
             {/* Main orbit — pivot at bottom edge, arc sweeps through screen center */}
-            <Orbit
-              rotation={rotation}
-              radius={MAIN_R}
-              pivot={{ left: "50%", bottom: `calc(50vh - ${MAIN_R}px)`, transform: "translateX(-50%)" } as React.CSSProperties}
-              visibleFn={(_x, y) => y < 120}
-              sizeActive={130} sizeNormal={84}
-              showLabel={false} interactive
-            />
+            {categories.length > 0 && (
+              <Orbit
+                rotation={rotation}
+                radius={MAIN_R}
+                pivot={{ left: "50%", bottom: `calc(50vh - ${MAIN_R}px)`, transform: "translateX(-50%)" } as React.CSSProperties}
+                visibleFn={(_x, y) => y < 120}
+                sizeActive={130} sizeNormal={84}
+                showLabel={false} interactive
+                items={categories}
+              />
+            )}
 
           </>
         )}

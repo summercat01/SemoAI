@@ -1,11 +1,26 @@
 'use client';
 
+import { useEffect } from 'react';
+
 export default function ServiceError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    fetch('/api/errors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        context: 'service',
+        digest: error.digest,
+      }),
+    }).catch(() => {});
+  }, [error]);
   return (
     <div style={{
       minHeight: '100vh',

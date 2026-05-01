@@ -11,6 +11,7 @@ export const SEARCH_TOPK_STEP1 = 30;
 export const SEARCH_TOPK_STEP2 = 50;
 export const SEARCH_FINAL_PICKS = 9;
 export const CLAUDE_MAX_TOKENS = 1500;
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
 // Admin
 export const ADMIN_PAGE_SIZE = 50;

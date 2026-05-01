@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
+import { reportError } from '@/lib/errorLogger';
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
     if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ data: rows[0] });
   } catch (error) {
-    console.error('User GET error:', error);
+    reportError(error, 'api/user GET').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

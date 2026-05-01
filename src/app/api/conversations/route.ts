@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { auth } from '@/auth';
 import { CONV_LIST_LIMIT, CONV_TITLE_MAX_LENGTH } from '@/lib/constants';
+import { reportError } from '@/lib/errorLogger';
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
     );
     return NextResponse.json({ data: rows });
   } catch (error) {
-    console.error('Conversations GET error:', error);
+    reportError(error, 'api/conversations GET').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Conversations POST error:', error);
+    reportError(error, 'api/conversations POST').catch(() => {});
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

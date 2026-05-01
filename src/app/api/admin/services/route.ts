@@ -3,6 +3,7 @@ import pool from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { reembedService } from '@/lib/embedService';
 import { upsertTags } from '@/lib/upsertTags';
+import { invalidateServiceCaches } from '@/lib/cache';
 
 export async function GET(req: NextRequest) {
   if (!await checkAdmin()) {
@@ -113,6 +114,7 @@ export async function POST(req: Request) {
     await upsertTags(serviceId, tags || []);
     // 임베딩 생성 (백그라운드)
     reembedService(serviceId).catch(() => {});
+    invalidateServiceCaches();
     return NextResponse.json({ id: serviceId });
   } catch (error: unknown) {
     console.error(error);
