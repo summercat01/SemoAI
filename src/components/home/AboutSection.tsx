@@ -192,64 +192,95 @@ export default function AboutSection() {
 
       </div>
 
-      {/* Right: logo mark */}
+      {/* Right: device mockup */}
       <div
         className={`about-mockup-area ${aboutVisible ? "about-right-enter" : ""}`}
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: aboutVisible ? undefined : 0,
           position: "relative",
+          height: 560,
+          opacity: aboutVisible ? undefined : 0,
         }}
       >
-        {/* Glow */}
+        {/* Laptop */}
+        <div
+          className="about-laptop"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "35%",
+            transform: "translate(-54%, -50%) rotate(-4deg)",
+            width: 690,
+            zIndex: 1,
+          }}
+        >
+          <div style={{ animation: aboutVisible ? "floatSlow 5s ease-in-out infinite" : "none" }}>
+            {/* Screen */}
+            <div style={{
+              background: "#1a1a2e",
+              borderRadius: "12px 12px 0 0",
+              border: "2px solid rgba(255,255,255,0.12)",
+              padding: 8,
+              overflow: "hidden",
+            }}>
+              {/* Browser bar */}
+              <div style={{
+                background: "rgba(255,255,255,0.06)",
+                borderRadius: 6,
+                padding: "5px 10px",
+                marginBottom: 6,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#ff5f57" }} />
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffbd2e" }} />
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#28c840" }} />
+                <div style={{ flex: 1, height: 14, background: "rgba(255,255,255,0.06)", borderRadius: 4, marginLeft: 6 }} />
+              </div>
+              {/* Empty screen */}
+              <div style={{ borderRadius: 4, height: 323, background: "#07070f" }} />
+            </div>
+            {/* Base */}
+            <div style={{ background: "#252540", height: 14, borderRadius: "0 0 4px 4px", border: "2px solid rgba(255,255,255,0.08)", borderTop: "none" }} />
+            <div style={{ background: "#1a1a30", height: 6, borderRadius: "0 0 8px 8px", width: "110%", marginLeft: "-5%" }} />
+          </div>
+        </div>
+
+        {/* Phone */}
+        <div
+          className="about-phone"
+          style={{
+            position: "absolute",
+            right: "10%",
+            top: "35%",
+            transform: "translateY(-44%) rotate(4deg)",
+            width: 180,
+            zIndex: 2,
+          }}
+        >
+          <div style={{ animation: aboutVisible ? "floatPhone 4s 0.8s ease-in-out infinite" : "none" }}>
+            <div style={{ background: "#1a1a2e", borderRadius: 20, border: "2px solid rgba(255,255,255,0.15)", padding: 6, overflow: "hidden" }}>
+              <div style={{ width: 36, height: 8, background: "#0d0d1a", borderRadius: 6, margin: "0 auto 6px" }} />
+              {/* Empty screen */}
+              <div style={{ background: "#07070f", borderRadius: 12, height: 300 }} />
+              <div style={{ width: 32, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, margin: "6px auto 0" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Glow behind devices */}
         <div style={{
           position: "absolute",
-          width: 320,
-          height: 320,
+          width: 360,
+          height: 360,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(124,106,247,0.22) 0%, rgba(79,195,247,0.1) 50%, transparent 70%)",
-          filter: "blur(40px)",
+          background: "radial-gradient(circle, rgba(80,150,255,0.18) 0%, transparent 70%)",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
           pointerEvents: "none",
+          zIndex: 0,
         }} />
-
-        {/* Logo */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 28,
-          position: "relative",
-          animation: aboutVisible ? "floatSlow 6s ease-in-out infinite" : "none",
-        }}>
-          <svg width="160" height="160" viewBox="0 0 28 28" fill="none">
-            <defs>
-              <linearGradient id="aboutLogoGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#a78bfa" />
-                <stop offset="100%" stopColor="#4fc3f7" />
-              </linearGradient>
-            </defs>
-            <polygon
-              points="14,3 26,24 2,24"
-              stroke="url(#aboutLogoGrad)"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-
-          <span style={{
-            fontSize: "clamp(28px, 3vw, 42px)",
-            fontWeight: 900,
-            letterSpacing: "8px",
-            background: "linear-gradient(135deg, #e0d7ff, #a78bfa 50%, #4fc3f7)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}>
-            SEMO AI
-          </span>
-        </div>
       </div>
     </section>
   );
